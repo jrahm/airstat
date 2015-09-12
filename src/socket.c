@@ -13,8 +13,8 @@
 #include "parse_options.h"
 
 #include "bus.h"
+#include "events.h"
 
-#define ID_PACKET_RECIEVED 1
 
 typedef unsigned int uint_t;
 typedef unsigned char u8_t;
@@ -75,7 +75,7 @@ void read_packet_from_socket(bus_t* bus, options_t* opts, int raw_socket)
     memcpy(data.chrs, buffer, datasize);
     data.sz = datasize;
 
-    bus_enqueue_packet_event(bus, new_packet_event(&data, 1));
+    bus_enqueue_packet_event(bus, new_packet_event(&data, ID_PACKET_RECIEVED));
 }
 
 int set_promiscuous_mode(options_t* opts, int fd)
