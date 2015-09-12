@@ -1,6 +1,7 @@
 #include "socket_ss.h"
 #include "packet_handlers.h"
 #include "bus.h"
+#include "iphdr_ss.h"
 
 #include <stdio.h>
 
@@ -15,10 +16,8 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    if(init_packet_handlers(com_bus)) {
-        fprintf(stderr, "Failed to initialize listeners\n");
-        exit(2);
-    }
+    init_packet_handlers(com_bus);
+    init_iphdr_ss(com_bus);
 
     ret = parse_options(&opts, argc, argv);
     if(ret) {

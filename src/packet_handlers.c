@@ -2,9 +2,14 @@
 
 #include "events.h"
 #include "packet_event.h"
+#include "iphdr_event.h"
 #include "types.h"
 
 #include <stdio.h>
+#include <netinet/ether.h>
+#include <linux/ip.h>
+#include <linux/udp.h>
+#include <linux/tcp.h>
 
 static void print_hex(const u8_t* chrs, size_t sz)
 {
@@ -37,15 +42,20 @@ static void print_hex(const u8_t* chrs, size_t sz)
     printf("\n");
 }
 
-static void handle_packet_event(void* data, struct packet_event* evt)
+static void handle_packet_event(void* bus_, struct packet_event* evt)
 {
-    (void) data;
+    bus_t* bus = bus_;
     printf("Packet of size %d bytes recieved\n", evt->data.sz);
     print_hex(evt->data.chrs, evt->data.sz);
+
+    struct ether_header* eth_header = (struct ether_header*)evt->data.chrs;
+    struct iphdr* ip_header = (struct iphdr*) evt->data.chrs + sizeof(struct ether_header);
+
+    bus_enqueue_iphdr_event(bus, new_iphdr_event(ip_header, ID_IP_HEADER_READ));
 }
 
 int init_packet_handlers(bus_t* bus)
 {
-    bus_packet_event_bind(bus, handle_packet_event, NULL, ID_PACKET_RECIEVED);
+    bus_packet_event_bind(bus, handle_packet_event, bus, ID_PACKET_RECIEVED);
     return 0;
 }

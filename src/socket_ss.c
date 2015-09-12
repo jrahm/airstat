@@ -1,21 +1,19 @@
-#include <sys/socket.h>
-#include <netinet/in.h>
-
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/ioctl.h>
-#include <linux/if_ether.h>
+#include "socket_ss.h"
 
 #include <net/if.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 #include "bus.h"
 #include "events.h"
 #include "packet_event.h"
-#include "parse_options.h"
-
 #include "packet_handlers.h"
+#include "parse_options.h"
 
 
 void read_packet_from_socket(bus_t* bus, options_t* opts, int raw_socket)
@@ -50,8 +48,6 @@ int bind_to_interface(options_t* opts, int fd)
 
     memset(&ifopts, 0, sizeof(ifopts));
     strncpy(ifopts.ifr_name, opts->interface, sizeof(ifopts.ifr_name));
-
-    printf("Bound %d to interface %s\n", fd, opts->interface);
 
     return setsockopt(fd,
             SOL_SOCKET,
