@@ -171,6 +171,7 @@ static void bus_event_delete(struct BUS__EVENT__* evt)
     if(evt->delete_internal) {
         evt->delete_internal(evt + 1);
     }
+    free(evt);
 }
 
 static void bus_handle_event(bus_t* bus, struct BUS__EVENT__* evt)
