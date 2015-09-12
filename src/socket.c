@@ -24,31 +24,51 @@ struct packet_data {
     size_t sz;
 };
 
-DECLARE_EVENT_TYPE(packet_event, struct packet_data);
-DEFINE_EVENT_TYPE(packet_event, struct packet_data);
+void delete_packet_data(struct packet_data* data)
+{
+    free(data->chrs);
+}
+
+DECLARE_EVENT_TYPE(packet_event, struct packet_data, delete_packet_data);
+DEFINE_EVENT_TYPE(packet_event, struct packet_data, delete_packet_data);
 
 void print_hex(const u8_t* chrs, size_t sz)
 {
     size_t i;
     uint_t ch;
+    printf("+=");
+    for(i = 0; i < 16; ++ i) {
+        printf("===");
+    }
+    printf("\n| ");
+    for(i = 0; i < 16; ++ i) {
+        printf("%02x ", i);
+    }
+    printf("\n+-");
+    for(i = 0; i < 16; ++ i) {
+        printf("---");
+    }
+    printf("\n| ");
     for(i = 0; i < sz; ++ i) {
         ch = chrs[i];
         printf("%02x ", ch);
-        if(i & 0xF == 0) {
-            printf("\n");
+        if(((i + 1) & 0xF) == 0) {
+            printf("\n| ");
         }
+    }
+    printf("\n+=");
+    for(i = 0; i < 16; ++ i) {
+        printf("===");
     }
     printf("\n");
 }
 
 void read_packet_from_socket(bus_t* bus, options_t* opts, int raw_socket)
 {
-    printf("Reading packet from interface %s\n", opts->interface);
     u8_t buffer[65536];
     int datasize;
 
     datasize = recvfrom(raw_socket, buffer, sizeof(buffer), 0, NULL, NULL);
-    printf("Recieved %d bytes from fd %d.\n", datasize, raw_socket);
 
     struct packet_data data;
     data.chrs = malloc(datasize);

@@ -19,9 +19,10 @@ typedef unsigned int event_id_t;
 struct BUS__EVENT__ {
     const char* evt_type;
     event_id_t evt_id;
+    void (*delete_internal)(void*);
 };
 
-#define DECLARE_EVENT_TYPE(evt_name, evt_internal) \
+#define DECLARE_EVENT_TYPE(evt_name, evt_internal, internal_destructor) \
     struct evt_name { \
         struct BUS__EVENT__ super; \
         evt_internal data; \
@@ -32,12 +33,13 @@ struct BUS__EVENT__ {
         void(*handler)(void* extrnl_data, struct evt_name* evt), \
         void* extrnl_data, event_id_t evt_id);
 
-#define DEFINE_EVENT_TYPE(EVT_NAME, EVT_INTERNAL) \
+#define DEFINE_EVENT_TYPE(EVT_NAME, EVT_INTERNAL, INTERNAL_DESTRUCTOR) \
     struct EVT_NAME* new_##EVT_NAME(const EVT_INTERNAL* internal, event_id_t id) { \
         struct EVT_NAME* ret = malloc(sizeof(struct EVT_NAME)); \
         memset(ret, 0, sizeof(struct EVT_NAME)); \
         ret->super.evt_type = #EVT_NAME; \
         ret->super.evt_id = id; \
+        ret->super.delete_internal = (void(*)(void*))INTERNAL_DESTRUCTOR; \
         ret->data = *internal; \
         return ret; \
     } \

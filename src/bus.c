@@ -76,7 +76,6 @@ static struct bus_event_type_node* bus_event_type_tree_index(struct bus_event_ty
         ret = calloc(sizeof(struct bus_event_type_node), 1);
         ret->key = key;
         ret->val = NULL;
-        printf("Inserting node %p\n", ret);
         RB_INSERT(bus_event_type_tree, tr, ret);
         return ret;
     }
@@ -120,7 +119,6 @@ static void bus_event_tree_insert_handler(struct bus_event_tree* tr,
     if(!node) {
         node = calloc(sizeof(struct bus_event_node), 1);
         node->key = evt;
-        printf("Inserting node %p\n", node);
         RB_INSERT(bus_event_tree, tr, node);
     }
     
@@ -168,6 +166,13 @@ static void bus_event_node_fire_event(struct bus_event_node* node,
     }
 }
 
+static void bus_event_delete(struct BUS__EVENT__* evt)
+{
+    if(evt->delete_internal) {
+        evt->delete_internal(evt + 1);
+    }
+}
+
 static void bus_handle_event(bus_t* bus, struct BUS__EVENT__* evt)
 {
     if(!evt) return;
@@ -195,6 +200,7 @@ void* bus_pthread_main(void* bus_)
         rc = blocking_queue_take(bus->m_event_queue, (void**)(&evt), 10000);
         if(rc == BQ_OK) {
             bus_handle_event(bus, evt);
+            bus_event_delete(evt);
         }
     }
     pthread_exit(NULL);
@@ -211,7 +217,6 @@ int bus_start(pthread_t* out, bus_t* bus)
 
 void bus__enqueue_event__(bus_t* bus, struct BUS__EVENT__* evt)
 {
-    printf("Enqueue event of type %s\n", evt->evt_type);
     blocking_queue_add(bus->m_event_queue, evt);
 }
 
