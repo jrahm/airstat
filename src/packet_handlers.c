@@ -49,9 +49,9 @@ static void handle_packet_event(void* bus_, struct packet_event* evt)
     print_hex(evt->data.chrs, evt->data.sz);
 
     struct ether_header* eth_header = (struct ether_header*)evt->data.chrs;
-    struct iphdr* ip_header = (struct iphdr*) evt->data.chrs + sizeof(struct ether_header);
+    struct iphdr* ip_header = (struct iphdr*) (evt->data.chrs + sizeof(struct ether_header));
 
-    bus_enqueue_iphdr_event(bus, new_iphdr_event(ip_header, ID_IP_HEADER_READ));
+    bus_enqueue_iphdr_event(bus, new_iphdr_event(ip_header, ID_PACKET_RECIEVED));
 }
 
 int init_packet_handlers(bus_t* bus)
