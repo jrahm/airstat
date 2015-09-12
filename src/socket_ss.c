@@ -33,27 +33,6 @@ void read_packet_from_socket(bus_t* bus, options_t* opts, int raw_socket)
     bus_enqueue_packet_event(bus, new_packet_event(&data, ID_PACKET_RECIEVED));
 }
 
-int set_promiscuous_mode(options_t* opts, int fd)
-{
-    /*
-     * Put a socket into promiscuous mode. If this function
-     * fails, it will fail with the return code and the errno
-     * will be set properly.
-     */
-
-    int ret;
-    struct ifreq ifopts;
-    strncpy(ifopts.ifr_name, opts->interface, sizeof(ifopts.ifr_name));
-
-    ret = ioctl(fd, SIOCSIFFLAGS, &ifopts);
-    if(ret) return ret;
-    
-    ifopts.ifr_flags |= IFF_PROMISC;
-
-    ret = ioctl(fd, SIOCSIFFLAGS, &ifopts);
-    if(ret) return ret;
-}
-
 int set_reuse_socket(options_t* opts, int fd)
 {
     (void) opts;
@@ -84,14 +63,6 @@ int bind_to_interface(options_t* opts, int fd)
 int run_with_raw_socket(bus_t* bus, options_t* opts, int raw_socket)
 {
     int ret;
-
-    // ret = set_promiscuous_mode(opts, raw_socket);
-
-    // if(ret) {
-    //     perror("Unable to set promiscuous mode");
-    //     return 1;
-    // }
-
     ret = set_reuse_socket(opts, raw_socket);
 
     if(ret) {
