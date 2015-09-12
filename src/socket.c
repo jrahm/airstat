@@ -12,8 +12,20 @@
 
 #include "parse_options.h"
 
+#include "bus.h"
+
+#define ID_PACKET_RECIEVED 1
+
 typedef unsigned int uint_t;
 typedef unsigned char u8_t;
+
+struct packet_data {
+    u8_t* chrs;
+    size_t sz;
+};
+
+DECLARE_EVENT_TYPE(packet_event, struct packet_data);
+DEFINE_EVENT_TYPE(packet_event, struct packet_data);
 
 void print_hex(const u8_t* chrs, size_t sz)
 {
@@ -29,7 +41,7 @@ void print_hex(const u8_t* chrs, size_t sz)
     printf("\n");
 }
 
-void read_packet_from_socket(options_t* opts, int raw_socket)
+void read_packet_from_socket(bus_t* bus, options_t* opts, int raw_socket)
 {
     printf("Reading packet from interface %s\n", opts->interface);
     u8_t buffer[65536];
@@ -37,7 +49,13 @@ void read_packet_from_socket(options_t* opts, int raw_socket)
 
     datasize = recvfrom(raw_socket, buffer, sizeof(buffer), 0, NULL, NULL);
     printf("Recieved %d bytes from fd %d.\n", datasize, raw_socket);
-    print_hex(buffer, datasize);
+
+    struct packet_data data;
+    data.chrs = malloc(datasize);
+    memcpy(data.chrs, buffer, datasize);
+    data.sz = datasize;
+
+    bus_enqueue_packet_event(bus, new_packet_event(&data, 1));
 }
 
 int set_promiscuous_mode(options_t* opts, int fd)
@@ -74,14 +92,21 @@ int set_reuse_socket(options_t* opts, int fd)
 
 int bind_to_interface(options_t* opts, int fd)
 {
+    struct ifreq ifopts;
+
+    memset(&ifopts, 0, sizeof(ifopts));
+    strncpy(ifopts.ifr_name, opts->interface, sizeof(ifopts.ifr_name));
+
+    printf("Bound %d to interface %s\n", fd, opts->interface);
+
     return setsockopt(fd,
             SOL_SOCKET,
             SO_BINDTODEVICE,
-            opts->interface,
-            strlen(opts->interface));
+            &ifopts,
+            sizeof(ifopts));
 }
 
-int run_with_raw_socket(options_t* opts, int raw_socket)
+int run_with_raw_socket(bus_t* bus, options_t* opts, int raw_socket)
 {
     int ret;
 
@@ -107,16 +132,30 @@ int run_with_raw_socket(options_t* opts, int raw_socket)
     }
 
     while(1) {
-        read_packet_from_socket(opts, raw_socket);
+        read_packet_from_socket(bus, opts, raw_socket);
     }
 
     return 0;
+}
+
+void print_packet_event(void* data, struct packet_event* evt)
+{
+    (void)data;
+    print_hex(evt->data.chrs, evt->data.sz);
 }
 
 int main(int argc, char** argv)
 {
     int raw_socket, ret;
     options_t opts;
+
+    bus_t* com_bus = new_bus();
+    if(bus_start(NULL, com_bus)) {
+        perror("Failed to start communication bus.");
+        exit(1);
+    }
+
+    bus_packet_event_bind(com_bus, print_packet_event, NULL, ID_PACKET_RECIEVED);
 
     ret = parse_options(&opts, argc, argv);
     if(ret) {
@@ -128,7 +167,7 @@ int main(int argc, char** argv)
         if(raw_socket < 0) {
             perror("Error creating raw socket");
         } else {
-            run_with_raw_socket(&opts, raw_socket);
+            run_with_raw_socket(com_bus, &opts, raw_socket);
             close(raw_socket);
         }
     }
