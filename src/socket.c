@@ -10,58 +10,13 @@
 
 #include <net/if.h>
 
-#include "parse_options.h"
-
 #include "bus.h"
 #include "events.h"
+#include "packet_event.h"
+#include "parse_options.h"
 
+#include "packet_handlers.h"
 
-typedef unsigned int uint_t;
-typedef unsigned char u8_t;
-
-struct packet_data {
-    u8_t* chrs;
-    size_t sz;
-};
-
-void delete_packet_data(struct packet_data* data)
-{
-    free(data->chrs);
-}
-
-DECLARE_EVENT_TYPE(packet_event, struct packet_data, delete_packet_data);
-DEFINE_EVENT_TYPE(packet_event, struct packet_data, delete_packet_data);
-
-void print_hex(const u8_t* chrs, size_t sz)
-{
-    size_t i;
-    uint_t ch;
-    printf("+=");
-    for(i = 0; i < 16; ++ i) {
-        printf("===");
-    }
-    printf("\n| ");
-    for(i = 0; i < 16; ++ i) {
-        printf("%02x ", i);
-    }
-    printf("\n+-");
-    for(i = 0; i < 16; ++ i) {
-        printf("---");
-    }
-    printf("\n| ");
-    for(i = 0; i < sz; ++ i) {
-        ch = chrs[i];
-        printf("%02x ", ch);
-        if(((i + 1) & 0xF) == 0) {
-            printf("\n| ");
-        }
-    }
-    printf("\n+=");
-    for(i = 0; i < 16; ++ i) {
-        printf("===");
-    }
-    printf("\n");
-}
 
 void read_packet_from_socket(bus_t* bus, options_t* opts, int raw_socket)
 {
@@ -158,12 +113,6 @@ int run_with_raw_socket(bus_t* bus, options_t* opts, int raw_socket)
     return 0;
 }
 
-void print_packet_event(void* data, struct packet_event* evt)
-{
-    (void)data;
-    print_hex(evt->data.chrs, evt->data.sz);
-}
-
 int main(int argc, char** argv)
 {
     int raw_socket, ret;
@@ -175,7 +124,10 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    bus_packet_event_bind(com_bus, print_packet_event, NULL, ID_PACKET_RECIEVED);
+    if(init_packet_handlers(com_bus)) {
+        fprintf(stderr, "Failed to initialize listeners\n");
+        exit(2);
+    }
 
     ret = parse_options(&opts, argc, argv);
     if(ret) {

@@ -8,7 +8,8 @@
  *        of the same solution.
  */
 
-#include <stdio.h>
+#include <stdlib.h>
+#include <memory.h>
 #include <pthread.h>
 
 struct BUS__;
@@ -22,7 +23,7 @@ struct BUS__EVENT__ {
     void (*delete_internal)(void*);
 };
 
-#define DECLARE_EVENT_TYPE(evt_name, evt_internal, internal_destructor) \
+#define DECLARE_EVENT_TYPE(evt_name, evt_internal) \
     struct evt_name { \
         struct BUS__EVENT__ super; \
         evt_internal data; \
