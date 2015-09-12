@@ -113,34 +113,14 @@ int run_with_raw_socket(bus_t* bus, options_t* opts, int raw_socket)
     return 0;
 }
 
-int main(int argc, char** argv)
+int run_socket_ss(options_t* opts, bus_t* bus)
 {
-    int raw_socket, ret;
-    options_t opts;
+    int raw_socket = socket(PF_PACKET, SOCK_RAW, htons(0x0800));
 
-    bus_t* com_bus = new_bus();
-    if(bus_start(NULL, com_bus)) {
-        perror("Failed to start communication bus.");
-        exit(1);
-    }
-
-    if(init_packet_handlers(com_bus)) {
-        fprintf(stderr, "Failed to initialize listeners\n");
-        exit(2);
-    }
-
-    ret = parse_options(&opts, argc, argv);
-    if(ret) {
-        printf("Error parsing command line options: %s\n", get_options_error());
-        return ret;
+    if(raw_socket < 0) {
+        perror("Error creating raw socket");
     } else {
-        raw_socket = socket(PF_PACKET, SOCK_RAW, htons(0x0800));
-    
-        if(raw_socket < 0) {
-            perror("Error creating raw socket");
-        } else {
-            run_with_raw_socket(com_bus, &opts, raw_socket);
-            close(raw_socket);
-        }
+        run_with_raw_socket(bus, opts, raw_socket);
+        close(raw_socket);
     }
 }
