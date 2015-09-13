@@ -6,6 +6,22 @@
  * created: 2015/09/11
  * bus.h: A communication bus between different modules
  *        of the same solution.
+ *
+ *        This bus is based on an event & event_id. Client code
+ *        may create a new event type with the DECLARE_EVENT_TYPE
+ *        and DEFINE_EVENT_TYPE macros. These macros will declare
+ *        and define a new event type specified by the user.
+ *
+ *        Each event is given an event ID provided by the client code,
+ *        a user can then bind a handler to an event with the correct
+ *        type and ID using the BUS_BIND macro.
+ *
+ *        Likewise, code may raise an event with the BUS_RAISE macro.
+ *        When an event is raised, it is queued and processed, which
+ *        calls all handlers wating for that event type and id.
+ *
+ *        The bus is thread safe and all handlers under the same bus
+ *        may be treated as if they are single-threaded modules.
  */
 
 #include <stdlib.h>
@@ -59,7 +75,15 @@ struct BUS__EVENT__ {
 #define BUS_RAISE(type, bus, event) \
     bus___enqueue_##type##___(bus, event)
 
+/*
+ * Create a new bus.
+ */
 bus_t* new_bus();
+
+/*
+ * Start the thread associated with this bus.
+ * This will cause the bus to begin creating events.
+ */
 int bus_start(pthread_t* out, bus_t* bus);
 
 void bus__bind_event__(bus_t* bus, const char* event_type, void* hdlr, void* external, event_id_t evt);
