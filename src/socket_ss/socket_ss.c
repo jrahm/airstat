@@ -11,10 +11,11 @@
 
 #include "bus.h"
 #include "events.h"
-#include "packet_event.h"
-#include "packet_handlers.h"
-#include "parse_options.h"
 
+#include "ether_ss/ether_event.h"
+#include "ether_ss/ether_ss.h"
+
+#include "main_ss/parse_options.h"
 
 void read_packet_from_socket(bus_t* bus, options_t* opts, int raw_socket)
 {

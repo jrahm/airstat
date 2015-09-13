@@ -1,8 +1,8 @@
-#include "packet_handlers.h"
+#include "ether_ss.h"
+#include "ether_event.h"
 
 #include "events.h"
-#include "packet_event.h"
-#include "iphdr_event.h"
+#include "iphdr_ss/iphdr_event.h"
 #include "types.h"
 
 #include <stdio.h>

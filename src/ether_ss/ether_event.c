@@ -1,4 +1,4 @@
-#include "packet_event.h"
+#include "ether_event.h"
 
 void delete_packet_data(struct packet_data* data)
 {

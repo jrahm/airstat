@@ -90,7 +90,7 @@ export ROOT_DIR=.
 export CC
 export AR
 
-CFLAGS := ''' + str(platform_cflags) + ''' -I include $(CFLAGS) -DTARGET_$(TGT) -DENVIRONMENT_$(ENV)
+CFLAGS := ''' + str(platform_cflags) + ''' -I ''' + " -I ".join(INCLUDE_DIRS) + ''' $(CFLAGS) -DTARGET_$(TGT) -DENVIRONMENT_$(ENV)
 
 HACK  := $(shell mkdir -p _$(TGT)_obs/)
 HACK2 := $(shell mkdir -p _$(TGT)_obs/tests/)

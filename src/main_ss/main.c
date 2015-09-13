@@ -1,8 +1,8 @@
-#include "socket_ss.h"
-#include "packet_handlers.h"
-#include "bus.h"
-#include "iphdr_ss.h"
+#include "socket_ss/socket_ss.h"
+#include "ether_ss/ether_ss.h"
+#include "iphdr_ss/iphdr_ss.h"
 
+#include "bus.h"
 #include <stdio.h>
 
 int main(int argc, char** argv)
