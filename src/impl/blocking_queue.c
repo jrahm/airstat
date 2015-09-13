@@ -38,9 +38,12 @@ static void millis_in_future( struct timespec* ts, long millis ) {
 #endif
 
 /* Add 50 ms */
-ts->tv_nsec += millis * 1000000;
-ts->tv_sec += ts->tv_nsec / 1000000000;
-ts->tv_nsec %= 1000000000;
+uint64_t nsec = ts->tv_nsec + millis * 1000000ll;
+uint64_t sec = ts->tv_sec + nsec / 1000000000ll;
+nsec %= 1000000000;
+
+ts->tv_nsec = nsec;
+ts->tv_sec = sec;
 }
 
 /* creates a new list node that
