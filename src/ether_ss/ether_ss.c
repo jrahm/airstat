@@ -42,20 +42,20 @@ static void print_hex(const u8_t* chrs, size_t sz)
     printf("\n");
 }
 
-static void handle_packet_event(void* bus_, struct packet_event* evt)
+static void handle_packet_event(void* data, struct packet_event* evt)
 {
-    bus_t* bus = bus_;
+    (void) data;
     printf("Packet of size %d bytes recieved\n", evt->data.sz);
     print_hex(evt->data.chrs, evt->data.sz);
 
     struct ether_header* eth_header = (struct ether_header*)evt->data.chrs;
     struct iphdr* ip_header = (struct iphdr*) (evt->data.chrs + sizeof(struct ether_header));
 
-    BUS_RAISE(iphdr_event, bus, new_iphdr_event(ip_header, ID_PACKET_RECIEVED));
+    RAISE_EVENT(iphdr_event, new_iphdr_event(ip_header, ID_PACKET_RECIEVED));
 }
 
-int init_packet_handlers(bus_t* bus)
+int init_packet_handlers()
 {
-    BUS_BIND(packet_event, bus, handle_packet_event, bus, ID_PACKET_RECIEVED);
+    BIND(packet_event, handle_packet_event, NULL, ID_PACKET_RECIEVED);
     return 0;
 }

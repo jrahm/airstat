@@ -23,7 +23,7 @@ void handle_iphdr(void* data, struct iphdr_event* evt)
     printf("To address: %s\n", sprint_ip_addr(buf, 128, evt->data.daddr));
 }
 
-void init_iphdr_ss(bus_t* bus)
+void init_iphdr_ss()
 {
-    BUS_BIND(iphdr_event, bus, handle_iphdr, NULL, ID_PACKET_RECIEVED);
+    BIND(iphdr_event, handle_iphdr, NULL, ID_PACKET_RECIEVED);
 }

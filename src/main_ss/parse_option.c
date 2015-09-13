@@ -11,7 +11,6 @@ const char* get_options_error()
 
 int parse_options(options_t* opts, int argc, char** argv)
 {
-    (void) argc; (void) argv;
     if(argc < 2) {
         strncpy(option_error, "Need to specify interface to listen on", 1024);
         return 1;

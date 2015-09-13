@@ -17,7 +17,7 @@
 
 #include "main_ss/parse_options.h"
 
-void read_packet_from_socket(bus_t* bus, options_t* opts, int raw_socket)
+void read_packet_from_socket(options_t* opts, int raw_socket)
 {
     u8_t buffer[65536];
     int datasize;
@@ -29,7 +29,7 @@ void read_packet_from_socket(bus_t* bus, options_t* opts, int raw_socket)
     memcpy(data.chrs, buffer, datasize);
     data.sz = datasize;
 
-    BUS_RAISE(packet_event, bus, new_packet_event(&data, ID_PACKET_RECIEVED));
+    RAISE_EVENT(packet_event, new_packet_event(&data, ID_PACKET_RECIEVED));
 }
 
 int set_reuse_socket(options_t* opts, int fd)
@@ -57,7 +57,7 @@ int bind_to_interface(options_t* opts, int fd)
             sizeof(ifopts));
 }
 
-int run_with_raw_socket(bus_t* bus, options_t* opts, int raw_socket)
+int run_with_raw_socket(options_t* opts, int raw_socket)
 {
     int ret;
     ret = set_reuse_socket(opts, raw_socket);
@@ -75,20 +75,22 @@ int run_with_raw_socket(bus_t* bus, options_t* opts, int raw_socket)
     }
 
     while(1) {
-        read_packet_from_socket(bus, opts, raw_socket);
+        read_packet_from_socket(opts, raw_socket);
     }
 
     return 0;
 }
 
-int run_socket_ss(options_t* opts, bus_t* bus)
+int run_socket_ss(options_t* opts)
 {
     int raw_socket = socket(PF_PACKET, SOCK_RAW, htons(0x0800));
 
     if(raw_socket < 0) {
         perror("Error creating raw socket");
+        return 1;
     } else {
-        run_with_raw_socket(bus, opts, raw_socket);
+        run_with_raw_socket(opts, raw_socket);
         close(raw_socket);
+        return 0;
     }
 }

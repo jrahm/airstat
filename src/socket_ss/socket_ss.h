@@ -8,8 +8,7 @@
  */
 
 #include "main_ss/parse_options.h"
-#include "bus.h"
 
-int run_socket_ss(options_t* opts, bus_t* bus);
+int run_socket_ss(options_t* opts);
 
 #endif /* SOCKET_SS_ */
