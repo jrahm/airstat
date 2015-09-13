@@ -28,7 +28,7 @@ void read_packet_from_socket(bus_t* bus, options_t* opts, int raw_socket)
     memcpy(data.chrs, buffer, datasize);
     data.sz = datasize;
 
-    bus_enqueue_packet_event(bus, new_packet_event(&data, ID_PACKET_RECIEVED));
+    BUS_RAISE(packet_event, bus, new_packet_event(&data, ID_PACKET_RECIEVED));
 }
 
 int set_reuse_socket(options_t* opts, int fd)

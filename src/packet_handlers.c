@@ -51,11 +51,11 @@ static void handle_packet_event(void* bus_, struct packet_event* evt)
     struct ether_header* eth_header = (struct ether_header*)evt->data.chrs;
     struct iphdr* ip_header = (struct iphdr*) (evt->data.chrs + sizeof(struct ether_header));
 
-    bus_enqueue_iphdr_event(bus, new_iphdr_event(ip_header, ID_PACKET_RECIEVED));
+    BUS_RAISE(iphdr_event, bus, new_iphdr_event(ip_header, ID_PACKET_RECIEVED));
 }
 
 int init_packet_handlers(bus_t* bus)
 {
-    bus_packet_event_bind(bus, handle_packet_event, bus, ID_PACKET_RECIEVED);
+    BUS_BIND(packet_event, bus, handle_packet_event, bus, ID_PACKET_RECIEVED);
     return 0;
 }

@@ -29,8 +29,8 @@ struct BUS__EVENT__ {
         evt_internal data; \
     }; \
     struct evt_name* new_##evt_name(const evt_internal* in, event_id_t id); \
-    void bus_enqueue_##evt_name(bus_t*b, struct evt_name* evt); \
-    void bus_##evt_name##_bind(bus_t* bus, \
+    void bus___enqueue_##evt_name##___(bus_t*b, struct evt_name* evt); \
+    void bus___##evt_name##_bind___(bus_t* bus, \
         void(*handler)(void* extrnl_data, struct evt_name* evt), \
         void* extrnl_data, event_id_t evt_id);
 
@@ -44,14 +44,20 @@ struct BUS__EVENT__ {
         ret->data = *internal; \
         return ret; \
     } \
-    void bus_enqueue_##EVT_NAME(bus_t* bus, struct EVT_NAME* evt) { \
+    void bus___enqueue_##EVT_NAME##___(bus_t* bus, struct EVT_NAME* evt) { \
         bus__enqueue_event__(bus, (struct BUS__EVENT__*) evt); \
     } \
-    void bus_##EVT_NAME##_bind(bus_t* bus,\
+    void bus___##EVT_NAME##_bind___(bus_t* bus,\
         void(*hdlr)(void* extrnl_data, struct EVT_NAME* evt), void* extrl,\
         event_id_t evt_id) { \
         bus__bind_event__(bus, #EVT_NAME, hdlr, extrl, evt_id); \
     }
+
+#define BUS_BIND(type, bus, handler, externl, event_id) \
+    bus___##type##_bind___(bus, handler, externl, event_id)
+
+#define BUS_RAISE(type, bus, event) \
+    bus___enqueue_##type##___(bus, event)
 
 bus_t* new_bus();
 int bus_start(pthread_t* out, bus_t* bus);

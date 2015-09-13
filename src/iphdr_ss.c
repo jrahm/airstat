@@ -25,5 +25,5 @@ void handle_iphdr(void* data, struct iphdr_event* evt)
 
 void init_iphdr_ss(bus_t* bus)
 {
-    bus_iphdr_event_bind(bus, handle_iphdr, NULL, ID_PACKET_RECIEVED);
+    BUS_BIND(iphdr_event, bus, handle_iphdr, NULL, ID_PACKET_RECIEVED);
 }
