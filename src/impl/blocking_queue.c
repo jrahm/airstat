@@ -91,7 +91,7 @@ int blocking_queue_take( blocking_queue_t* queue, void** into, uint64_t timeout 
 {
 	struct timespec ts;
     int rc;
-    void* garbage;
+    void* garbage = NULL;
 
 	pthread_mutex_lock( &queue->_m_mutex ) ;
 
@@ -108,7 +108,7 @@ int blocking_queue_take( blocking_queue_t* queue, void** into, uint64_t timeout 
             goto cleanup_and_return;
         } else if(rc != 0) {
             perror("WARN: error on timedwait");
-            fprintf(stderr, "Error code: %d\n", rc);
+            fprintf(stderr, "Timeout=%llu Error code: %d\n", timeout, rc);
             goto cleanup_and_return;
         }
 	}
