@@ -55,6 +55,7 @@ void* string_map_insert(struct string_map* map, const char* key, void* value)
         node = malloc(sizeof(struct string_map_node));
         node->key = strdup(key);
         node->value = value;
+        RB_INSERT(string_map, map, node);
     }
 
     return ret;
@@ -91,3 +92,4 @@ void* string_map_get(struct string_map* map, const char* key)
         return NULL;
     }
 }
+

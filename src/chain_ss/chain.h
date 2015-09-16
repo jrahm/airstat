@@ -28,7 +28,7 @@ struct chain_rule {
     int m_type;
 
     union {
-        const char* call_fn_name;
+        char* call_fn_name;
         struct chain_rule* goto_chain;
     };
 };
@@ -43,7 +43,9 @@ struct chain_set {
     struct chain_rule* udp_chain_head;
 };
 
-struct chain_set* parse_chains_from_file(FILE* fd);
+const char* get_error();
+struct chain_set* parse_chains_from_file(const char* filename);
 void free_chain(struct chain_rule* chain);
+void print_chain(struct chain_rule* chain);
 
 #endif /* SRC_CHAIN_SS_CHAIN_ */
