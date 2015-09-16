@@ -10,7 +10,7 @@ char* next_token(FILE* fd, size_t* len, int (*get_class)(char))
 {
     int ch;
 
-    char* retbuf = malloc(128);
+    char* retbuf;
     size_t nalloc = 128;
     size_t size = 0;
     int class;
@@ -20,6 +20,7 @@ char* next_token(FILE* fd, size_t* len, int (*get_class)(char))
 
     class = get_class(ch);
     size = 1;
+    retbuf = malloc(nalloc);
     retbuf[0] = ch;
 
     while((ch = fgetc(fd)) != -1 && class == get_class(ch)) {
@@ -96,6 +97,7 @@ struct chain_rule* read_one_chain_rule(char* token, FILE* fd, string_map_t* strm
     char* goto_name;
 
     if(token[0] == '(') {
+        free(token);
         token = next_token_skip_space(fd, NULL, not_paren);
         pat = compile_pattern(token);
         free(token);
@@ -143,12 +145,14 @@ struct chain_rule* read_one_chain_rule(char* token, FILE* fd, string_map_t* strm
             sprintf(error, "Error: %s: no such chain\n", goto_name);
             goto error;
         }
+        ret->goto_chain->m_ref ++;
     } else {
         sprintf(error, "Unknown command %s\n", token);
         free(token);
         goto error;
     }
 
+    free(token);
     token = next_token_skip_space(fd, NULL, default_class);
     if(!token || token[0] != ';') {
         sprintf(error, "Expected ';', got %s\n", token);
@@ -184,9 +188,11 @@ struct chain_rule* read_chain(FILE* fd, string_map_t* chain_map)
     token = next_token_skip_space(fd, &len, default_class);
 
     if(strcmp(token, "{")) {
+        free(token);
         snprintf(error, sizeof(error), "Syntax error near %s\n", token);
         goto error;
     }
+    free(token);
 
     while(1) {
         token = next_token_skip_space(fd, &len, default_class);
@@ -274,6 +280,18 @@ error:
     return NULL;
 }
 
+void try_delete_chain(struct chain_rule* cr)
+{
+    if(cr->m_ref == 0) free_chain(cr);
+}
+
+void test_incref(struct chain_rule* rule)
+{
+    if(rule) {
+        rule->m_ref ++;
+    }
+}
+
 struct chain_set* parse_chains_from_file(const char* filename)
 {
     FILE* fd;
@@ -288,10 +306,18 @@ struct chain_set* parse_chains_from_file(const char* filename)
     }
 
     struct chain_set* ret = malloc(sizeof(struct chain_set));
+
     ret->ether_chain_head = string_map_get(map, "ether");
     ret->ip_chain_head = string_map_get(map, "ip");
     ret->tcp_chain_head = string_map_get(map, "tcp");
     ret->udp_chain_head = string_map_get(map, "udp");
+
+    test_incref(ret->ether_chain_head);
+    test_incref(ret->ip_chain_head);
+    test_incref(ret->tcp_chain_head);
+    test_incref(ret->udp_chain_head);
+
+    string_map_free(map, try_delete_chain);
     return ret;
 }
 
@@ -302,7 +328,21 @@ const char* get_error()
 
 void free_chain(struct chain_rule* chain)
 {
-    /* TODO implement this */
+    struct chain_rule* cur = chain;
+    struct chain_rule* next;
+
+    while(cur != NULL) {
+        next = cur->next;
+        if(cur->m_type == RULE_TYPE_GOTO) {
+            cur->goto_chain->m_ref --;
+            try_delete_chain(cur->goto_chain);
+        } else if(cur->m_type == RULE_TYPE_CALL) {
+            free(cur->call_fn_name);
+        }
+        free(cur);
+        cur = next;
+    }
+
     return;
 }
 

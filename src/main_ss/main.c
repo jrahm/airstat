@@ -33,6 +33,12 @@ int main(int argc, char** argv)
         printf("\nUdp:   ");
         print_chain(chains->udp_chain_head);
         printf("\n");
+
+        free_chain(chains->ether_chain_head);
+        free_chain(chains->ip_chain_head);
+        free_chain(chains->tcp_chain_head);
+        free_chain(chains->udp_chain_head);
+        free(chains);
     }
 
     init_packet_handlers();

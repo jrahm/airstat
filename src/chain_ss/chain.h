@@ -25,6 +25,7 @@ struct chain_rule {
     struct pattern* m_pattern;
     struct chain_rule* next;
 
+    int m_ref; /* reference count */
     int m_type;
 
     union {
