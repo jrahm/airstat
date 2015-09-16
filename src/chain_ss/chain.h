@@ -3,13 +3,40 @@
 
 #include <stdio.h>
 
-struct pattern {
-    int m_type;
+#include "types.h"
+
+#define HAS_DEST_MAC_ADDR 0x1
+#define HAS_SRC_MAC_ADDR 0x2
+#define HAS_SRC_IP4_ADDR 0x4
+#define HAS_DEST_IP4_ADDR 0x8
+#define HAS_SRC_IP_PORT 0x10
+#define HAS_DEST_IP_PORT 0x20
+
+struct pattern_handler {
+    struct pattern_handler* next;
+    char* name;
 };
+
+struct pattern {
+    uint64_t features;
+
+    u8_t dest_mac_addr[6];
+    u8_t src_mac_addr[6];
+    
+    uint32_t src_ip4_addr; 
+    uint32_t dest_ip4_addr;
+
+    uint16_t src_ip_port;
+    uint16_t dest_ip_port;
+
+    struct pattern_handler* handlers;
+};
+
+void print_pattern(struct pattern* pat) ;
 
 struct hdr {
     int m_type;
-    void(*matches)(struct pattern* pattern);
+    void(*matches)(void* self, struct pattern* pattern);
 };
 
 enum chain_rule_type {

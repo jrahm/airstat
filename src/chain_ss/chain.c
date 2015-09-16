@@ -3,6 +3,7 @@
 #include <string_map.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 
 char error[1024];
 
@@ -80,14 +81,95 @@ static int default_class(char ch)
 static int not_paren(char ch)
 {
     if(ch == ')') return 1;
-    else if(isspace(ch)) return 2;
     else return 3;
+}
+
+static const char* next_word(const char* in, char* out, size_t len)
+{
+    size_t i;
+    -- len;
+    while(isspace(*in)) ++ in;
+    for(i = 0; i < len && !isspace(*in) && *in ; ++ in, ++ i) {
+        out[i] = *in;
+    }
+    out[i] = 0;
+    return in;
+}
+
+static int parse_mac_addr(u8_t* mac, const char* value)
+{
+    size_t i = 0;
+    size_t j = 0;
+
+    if(strlen(value) != 17) return 1;
+
+    mac[i] = (value[j++] - 0x30) << 4;
+    mac[i++] += value[j++] - 0x30;
+    if(value[j++] != ':') return 1;
+
+    mac[i] = (value[j++] - 0x30) << 4;
+    mac[i++] += value[j++] - 0x30;
+    if(value[j++] != ':') return 1;
+
+    mac[i] = (value[j++] - 0x30) << 4;
+    mac[i++] += value[j++] - 0x30;
+    if(value[j++] != ':') return 1;
+
+    mac[i] = (value[j++] - 0x30) << 4;
+    mac[i++] += value[j++] - 0x30;
+    if(value[j++] != ':') return 1;
+
+    mac[i] = (value[j++] - 0x30) << 4;
+    mac[i++] += value[j++] - 0x30;
+    if(value[j++] != ':') return 1;
+
+    mac[i] = (value[j++] - 0x30) << 4;
+    mac[i++] += value[j++] - 0x30;
+
+    return 0;
+}
+
+static void add_key_to_pattern(struct pattern* pat, const char* key, const char* val)
+{
+    if(!strcmp(key, "src_mac")) {
+        if(parse_mac_addr(pat->src_mac_addr, val)) {
+            fprintf(stderr, "Failed to parse mac address '%s'", val);
+        } else {
+            pat->features |= HAS_SRC_MAC_ADDR;
+        }
+    } else if(!strcmp(key, "dest_mac")) {
+        if(parse_mac_addr(pat->dest_mac_addr, val)) {
+            fprintf(stderr, "Failed to parse mac address '%s'", val);
+        } else {
+            pat->features |= HAS_DEST_MAC_ADDR;
+        }
+    } else {
+        fprintf(stderr, "WARN: unimplemented key: %s\n", key);
+    }
 }
 
 struct pattern* compile_pattern(const char* pat)
 {
-    (void) pat;
-    return NULL;
+    printf("Compile: %s\n", pat);
+    char word[1024];
+    char* ptr;
+    struct pattern* ret = calloc(sizeof(struct pattern), 1);
+    pat = next_word(pat, word, sizeof(word));
+
+    while(word[0]) {
+        ptr = strchr(word, '=');
+        if(ptr) {
+            *ptr = 0;
+            ptr ++;
+            add_key_to_pattern(ret, word, ptr);
+        } else {
+            fprintf(stderr, "handles (%s) not yet implemented\n", word);
+            /* it is a handle now */;
+        }
+        pat = next_word(pat, word, sizeof(word));
+    }
+    
+    return ret;
 }
 
 struct chain_rule* read_one_chain_rule(char* token, FILE* fd, string_map_t* strmap)
@@ -251,7 +333,7 @@ struct string_map* read_chains(FILE* fd)
             break;
         }
 
-        if(strncmp(chain, "chain") != 0) {
+        if(strcmp(chain, "chain") != 0) {
             sprintf(error, "Expected 'chain', got %s\n", chain);
             goto error;
         }
@@ -351,28 +433,56 @@ void print_chain(struct chain_rule* chain)
     if(chain == NULL) {
         printf("(null)");
     } else {
+        print_pattern(chain->m_pattern);
         switch(chain->m_type) {
             case(RULE_TYPE_LOG):
-                printf("log -> ");
+                printf(" log -> ");
                 break;
             case(RULE_TYPE_GOTO):
-                printf("goto (");
+                printf(" goto (");
                 print_chain(chain->goto_chain);
                 printf(") -> ");
                 break;
             case(RULE_TYPE_RETURN):
-                printf("return -> ");
+                printf(" return -> ");
                 break;
             case(RULE_TYPE_CONTINUE):
-                printf("continue -> ");
+                printf(" continue -> ");
                 break;
             case(RULE_TYPE_CALL):
-                printf("call %s -> ", chain->call_fn_name);
+                printf(" call %s -> ", chain->call_fn_name);
                 break;
             case(RULE_TYPE_DROP):
-                printf("drop -> ");
+                printf(" drop -> ");
                 break;
         }
         print_chain(chain->next);
     }
+}
+
+void print_pattern(struct pattern* pat)
+{
+    if(!pat) return;
+    printf("(");
+    if(pat->features & HAS_SRC_MAC_ADDR) {
+        printf("src_mac=%02x:%02x:%02x:%02x:%02x:%02x ",
+            pat->src_mac_addr[0],
+            pat->src_mac_addr[1],
+            pat->src_mac_addr[2],
+            pat->src_mac_addr[3],
+            pat->src_mac_addr[4],
+            pat->src_mac_addr[5]
+        );
+    }
+    if(pat->features & HAS_DEST_MAC_ADDR) {
+        printf("dest_mac=%02x:%02x:%02x:%02x:%02x:%02x ",
+            pat->src_mac_addr[0],
+            pat->src_mac_addr[1],
+            pat->src_mac_addr[2],
+            pat->src_mac_addr[3],
+            pat->src_mac_addr[4],
+            pat->src_mac_addr[5]
+        );
+    }
+    printf(")");
 }
