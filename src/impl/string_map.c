@@ -35,7 +35,7 @@ static struct string_map_node* string_map_find_node(struct string_map* map, cons
 struct string_map* new_string_map()
 {
     struct string_map* init = malloc(sizeof(struct string_map));
-    struct string_map tmp = RB_INITIALIZER(struct string_map);
+    struct string_map tmp = RB_INITIALIZER(&tmp);
     *init = tmp;
     return init;
 }
@@ -64,17 +64,17 @@ void* string_map_insert(struct string_map* map, const char* key, void* value)
 void* string_map_remove(struct string_map* map, const char* key)
 {
     struct string_map_node* node;
-    void* value;
-    node = RB_REMOVE(string_map, map, node);
+    void* ret = NULL;
+
+    node = string_map_find_node(map, key);
 
     if(node) {
+        ret = node->value;
         free(node->key);
-        value = node->value;
-        free(node);
-        return value;
-    } else {
-        return NULL;
+        RB_REMOVE(string_map, map, node);
     }
+
+    return ret;
 }
 
 int string_map_has_key(struct string_map* map, const char* key)
@@ -91,5 +91,22 @@ void* string_map_get(struct string_map* map, const char* key)
     } else {
         return NULL;
     }
+}
+
+void string_map_free(struct string_map* map, void(*callback)(void*))
+{
+	/* Free tree. */
+    struct string_map_node* np;
+    struct string_map_node* op;
+
+	for (np = RB_MIN(string_map, map); np != NULL; np = op) {
+		op = RB_NEXT(string_map, map, np);
+		RB_REMOVE(string_map, map, np);
+        callback(np->value);
+        free(np->key);
+		free(np);
+	}
+
+    free(map);
 }
 
