@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <plugin_ss/plugin_ss.h>
 
 char error[1024];
 
@@ -176,7 +177,7 @@ struct pattern* compile_pattern(const char* pat)
         }
         pat = next_word(pat, word, sizeof(word));
     }
-    
+
     return ret;
 }
 
@@ -202,7 +203,7 @@ struct chain_rule* read_one_chain_rule(char* token, FILE* fd, string_map_t* strm
     }
 
     ret->m_pattern = pat;
-    ret->call_fn_name = NULL;
+    ret->call_or_goto_name = NULL;
 
     if(strcmp(token, "return") == 0) {
         ret->m_type = RULE_TYPE_RETURN;
@@ -214,10 +215,10 @@ struct chain_rule* read_one_chain_rule(char* token, FILE* fd, string_map_t* strm
         ret->m_type = RULE_TYPE_DROP;
     } else if(strcmp(token, "call") == 0) {
         ret->m_type = RULE_TYPE_CALL;
-        ret->call_fn_name = next_token_skip_space(fd, NULL, default_class);
-        if(!ret->call_fn_name || !isalnum(ret->call_fn_name[0])) {
+        ret->call_or_goto_name = next_token_skip_space(fd, NULL, default_class);
+        if(!ret->call_or_goto_name || !isalnum(ret->call_or_goto_name[0])) {
             sprintf(error, "Syntax error: missing identifier after `call'\n");
-            free(ret->call_fn_name);
+            free(ret->call_or_goto_name);
             goto error;
         }
     } else if(strcmp(token, "goto") == 0) {
@@ -229,8 +230,8 @@ struct chain_rule* read_one_chain_rule(char* token, FILE* fd, string_map_t* strm
             goto error;
         }
 
+        ret->call_or_goto_name = goto_name;
         ret->goto_chain = string_map_get(strmap, goto_name);
-        free(goto_name);
         if(!ret->goto_chain) {
             sprintf(error, "Error: %s: no such chain\n", goto_name);
             goto error;
@@ -259,7 +260,26 @@ error:
     return NULL;
 }
 
-struct chain_rule* read_chain(FILE* fd, string_map_t* chain_map)
+static int link_chain(struct chain_rule* chainr, struct string_map* link_map)
+{
+    if(!chainr) return 0;
+
+    void* fn;
+    if(chainr->m_type == RULE_TYPE_CALL) {
+        if(!string_map_has_key(link_map, chainr->call_or_goto_name)) {
+            snprintf(error, sizeof(error), "Unresolved symbol %s",
+                        chainr->call_or_goto_name);
+            return 1;
+        } else {
+            fn = string_map_get(link_map, chainr->call_or_goto_name);
+            chainr->call_fn = fn;
+        }
+    }
+
+    return link_chain(chainr->next, link_map);
+}
+
+struct chain_rule* read_chain(FILE* fd, string_map_t* chain_map, string_map_t* linkmap)
 {
     /* read a single chain from the file
      * given above. This already assumes
@@ -300,7 +320,7 @@ struct chain_rule* read_chain(FILE* fd, string_map_t* chain_map)
                 sprintf(error, "Unexpected EOF while parsing chain\n");
                 goto error;
             } else {
-                tmp = read_chain(fd, chain_map);
+                tmp = read_chain(fd, chain_map, linkmap);
                 if(tmp) {
                     string_map_insert(chain_map, token, tmp);
                     free(token);
@@ -320,17 +340,42 @@ struct chain_rule* read_chain(FILE* fd, string_map_t* chain_map)
         }
     }
 
+    if(link_chain(super_head.next, linkmap))
+        goto error;
+
     return super_head.next;
 error:
     free_chain(super_head.next);
     return NULL;
 }
 
-struct string_map* read_chains(FILE* fd)
+static struct string_map* plugins_to_link_map(struct plugin* plugins)
+{
+    struct string_map* ret = new_string_map();
+    struct plugin* cursor = plugins;
+    struct consumer_routine* routine;
+    size_t i;
+
+    while(cursor != NULL) {
+        if(cursor->type == PLUGIN_TYPE_CONSUMER) {
+            for(i = 0; i < cursor->consumer.n_routines; ++ i) {
+                routine = &cursor->consumer.routines[i];
+                string_map_insert(ret, routine->name, routine->routine);
+            }
+        }
+        cursor = cursor->next_plugin;
+    }
+
+    return ret;
+}
+
+
+struct string_map* read_chains(FILE* fd, struct plugin* plugins)
 {
     char* chain = NULL;
     char* name = NULL;
     string_map_t* ret = new_string_map();
+    string_map_t* link_map = plugins_to_link_map(plugins);
     struct chain_rule* chainr;
 
     while(1) {
@@ -349,8 +394,9 @@ struct string_map* read_chains(FILE* fd)
             sprintf(error, "Expected identifier after 'chain', got %s", name);
             goto error;
         }
-        
-        chainr = read_chain(fd, ret);
+
+        chainr = read_chain(fd, ret, link_map);
+
         if(!chainr) goto error;
 
         string_map_insert(ret, name, chainr);
@@ -360,8 +406,11 @@ struct string_map* read_chains(FILE* fd)
         name = chain = NULL;
     }
 
+    string_map_free(link_map, NULL);
     return ret;
 error:
+    string_map_free(link_map, NULL);
+
     free(chain);
     free(name);
     free(ret);
@@ -380,7 +429,7 @@ void test_incref(struct chain_rule* rule)
     }
 }
 
-struct chain_set* parse_chains_from_file(const char* filename)
+struct chain_set* parse_chains_from_file(const char* filename, struct plugin* plugins)
 {
     FILE* fd;
     fd = fopen(filename, "r");
@@ -388,7 +437,7 @@ struct chain_set* parse_chains_from_file(const char* filename)
         sprintf(error, "Unable to open file: %s", filename);
         return NULL;
     }
-    string_map_t* map = read_chains(fd);
+    string_map_t* map = read_chains(fd, plugins);
     if(!map) {
         return NULL;
     }
@@ -425,7 +474,7 @@ void free_chain(struct chain_rule* chain)
             cur->goto_chain->m_ref --;
             try_delete_chain(cur->goto_chain);
         } else if(cur->m_type == RULE_TYPE_CALL) {
-            free(cur->call_fn_name);
+            free(cur->call_or_goto_name);
         }
         free(cur);
         cur = next;
@@ -445,9 +494,7 @@ void print_chain(struct chain_rule* chain)
                 printf(" log -> ");
                 break;
             case(RULE_TYPE_GOTO):
-                printf(" goto (");
-                print_chain(chain->goto_chain);
-                printf(") -> ");
+                printf(" goto %s -> ", chain->call_or_goto_name);
                 break;
             case(RULE_TYPE_RETURN):
                 printf(" return -> ");
@@ -456,7 +503,7 @@ void print_chain(struct chain_rule* chain)
                 printf(" continue -> ");
                 break;
             case(RULE_TYPE_CALL):
-                printf(" call %s -> ", chain->call_fn_name);
+                printf(" call %s -> ", chain->call_or_goto_name);
                 break;
             case(RULE_TYPE_DROP):
                 printf(" drop -> ");

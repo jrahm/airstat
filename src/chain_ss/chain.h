@@ -55,8 +55,9 @@ struct chain_rule {
     int m_ref; /* reference count */
     int m_type;
 
+    char* call_or_goto_name;
     union {
-        char* call_fn_name;
+        void(*call_fn)(void*);
         struct chain_rule* goto_chain;
     };
 };
@@ -72,7 +73,10 @@ struct chain_set {
 };
 
 const char* get_error();
-struct chain_set* parse_chains_from_file(const char* filename);
+
+struct plugin;
+struct chain_set* parse_chains_from_file(const char* filename, struct plugin*);
+
 void free_chain(struct chain_rule* chain);
 void print_chain(struct chain_rule* chain);
 

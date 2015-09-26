@@ -5,7 +5,7 @@ AIRSTAT_PLUGIN(CONSUMER, "TestPlugin")
 
 void print_address(void* p)
 {
-    printf("%p\n", p);
+    printf("ADDRESS: %p\n", p);
 }
 
 AIRSTAT_EXPORT_BEGIN()

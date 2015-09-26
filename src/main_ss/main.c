@@ -30,7 +30,7 @@ int main(int argc, char** argv)
     }
     print_plugin_chain(stdout, plugin_chain);
 
-    chains = parse_chains_from_file("tmp.conf");
+    chains = parse_chains_from_file("tmp.conf", plugin_chain);
     if(!chains) {
         printf("Error parsing chains: %s\n", get_error());
         return 1;

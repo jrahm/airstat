@@ -125,10 +125,12 @@ void ether_chain_handle_drop(struct chain_raw_packet_data* data)
 
 void ether_chain_handle_call(struct chain_raw_packet_data* data)
 {
+    if(data->current_chain_rule &&
+        data->current_chain_rule->call_fn) {
+        data->current_chain_rule->call_fn(data);
+    }
     data->current_chain_rule = data->current_chain_rule->next;
     ether_chain_handle_BEGIN(data);
-
-    fprintf(stderr, "call NOT implemented\n");
 }
 
 void ether_chain_handle_log(struct chain_raw_packet_data* data)

@@ -102,7 +102,8 @@ void string_map_free(struct string_map* map, void(*callback)(void*))
 	for (np = RB_MIN(string_map, map); np != NULL; np = op) {
 		op = RB_NEXT(string_map, map, np);
 		RB_REMOVE(string_map, map, np);
-        callback(np->value);
+        if(callback)
+            callback(np->value);
         free(np->key);
 		free(np);
 	}
