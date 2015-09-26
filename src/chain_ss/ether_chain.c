@@ -91,7 +91,12 @@ void ether_chain_handle_BEGIN(struct chain_raw_packet_data* data)
     struct chain_rule* current_rule;
     current_rule = data->current_chain_rule;
 
-    data->next_handler = rule_type_to_handler(current_rule->m_type);
+    if(current_rule) {
+        data->next_handler = rule_type_to_handler(current_rule->m_type);
+    } else {
+        /* default behavior of continue */
+        data->next_handler = ether_chain_handle_continue;
+    }
 }
 
 void ether_chain_handle_return(struct chain_raw_packet_data* data)
