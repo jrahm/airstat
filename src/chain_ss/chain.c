@@ -260,11 +260,9 @@ struct chain_rule* read_chain(FILE* fd, string_map_t* chain_map)
 
     char* token;
     size_t len;
-    int rc = 0;
     struct chain_rule super_head;
     super_head.next = NULL;
     struct chain_rule* cursor = &super_head;
-    struct chain_rule* next;
     struct chain_rule* tmp;
 
     token = next_token_skip_space(fd, &len, default_class);
@@ -399,7 +397,7 @@ struct chain_set* parse_chains_from_file(const char* filename)
     test_incref(ret->tcp_chain_head);
     test_incref(ret->udp_chain_head);
 
-    string_map_free(map, try_delete_chain);
+    string_map_free(map, (void(*)(void*))(try_delete_chain));
     return ret;
 }
 

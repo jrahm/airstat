@@ -11,7 +11,7 @@
 
 int main(int argc, char** argv)
 {
-    int raw_socket, ret;
+    int ret;
     options_t opts;
     struct chain_set* chains;
     struct chain_ctx* chain_context;

@@ -16,5 +16,6 @@ void* string_map_insert(struct string_map* map, const char* key, void* value);
 void* string_map_remove(struct string_map* map, const char* key);
 int   string_map_has_key(struct string_map* map, const char* key);
 void* string_map_get(struct string_map* map, const char* key);
+void string_map_free(struct string_map* map, void(*)(void*));
 
 #endif /* SRC_STRING_MAP_ */

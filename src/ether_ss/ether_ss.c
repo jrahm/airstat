@@ -13,7 +13,7 @@
 
 static void print_hex(const u8_t* chrs, size_t sz)
 {
-    size_t i;
+    uint_t i;
     uint_t ch;
     printf("+=");
     for(i = 0; i < 16; ++ i) {
@@ -45,10 +45,9 @@ static void print_hex(const u8_t* chrs, size_t sz)
 static void handle_packet_event(void* data, struct packet_event* evt)
 {
     (void) data;
-    printf("Packet of size %d bytes recieved\n", evt->data.sz);
+    printf("Packet of size %lu bytes recieved\n", evt->data.sz);
     print_hex(evt->data.chrs, evt->data.sz);
 
-    struct ether_header* eth_header = (struct ether_header*)evt->data.chrs;
     struct iphdr* ip_header = (struct iphdr*) (evt->data.chrs + sizeof(struct ether_header));
 
     RAISE_EVENT(iphdr_event, new_iphdr_event(ip_header, ID_PACKET_RECIEVED));

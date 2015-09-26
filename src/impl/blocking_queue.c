@@ -17,7 +17,7 @@ extern FILE* logfile ;
 	if( logfile ) { fprintf( logfile, fmt, ##__VA_ARGS__ ) ; fflush( logfile ) ; }
 #else
 #define lprintf( fmt, ... )
-#endif	
+#endif
 
 #define sassert( expr, message, ... ) \
 	if( ! (expr) ) { \
@@ -105,17 +105,17 @@ int blocking_queue_take( blocking_queue_t* queue, void** into, uint64_t timeout 
 		millis_in_future( &ts, timeout );
 
 		/* wait for the queue to be filled again */
+
         rc = pthread_cond_timedwait(&queue->_m_condition, &queue->_m_mutex, &ts);
         if(rc == ETIMEDOUT) {
             rc = BQ_TIMEOUT;
             goto cleanup_and_return;
         } else if(rc != 0) {
             perror("WARN: error on timedwait");
-            fprintf(stderr, "Timeout=%llu Error code: %d\n", timeout, rc);
             goto cleanup_and_return;
         }
 	}
-    
+
     assert(queue->_m_head != queue->_m_tail);
 
 	*into = queue->_m_head->data ;
@@ -141,7 +141,7 @@ int blocking_queue_wait_digest( blocking_queue_t* queue, uint64_t timeout ) {
 	millis_in_future( &ts, timeout );
 
     int ret = BQ_OK ;
-    
+
     pthread_mutex_lock( &queue->_m_mutex ) ;
     lprintf( __FILE__ ":%d locking mutex\n", __LINE__ ) ;
 

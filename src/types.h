@@ -5,6 +5,7 @@
 
 typedef unsigned char u8_t;
 typedef unsigned int uint_t;
+typedef long long unsigned int llu_t;
 
 #ifndef __cplusplus
 typedef enum {
