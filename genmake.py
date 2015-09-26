@@ -109,7 +109,7 @@ MAKEFILE_FOOTER = '''
 clean:
 	for i in $$(find . -name '_$(TGT)_obs') ; do rm -rfv $$i ; done
 
-.PHONY: tools tests
+.PHONY: tools tests modules
 tools: notests
 	for i in $$(find tools/ -iname "makefile"); do pushd $$(dirname $$i) && make && popd ; done
 
@@ -122,6 +122,12 @@ test: tests
 
 cleanall:
 	for i in $$(find . -name '_*_obs') ; do rm -rfv $$i ; done
+
+modules:
+	for i in $$(find modules -iname 'Makefile') ; do pushd $$(dirname $$i) && make && popd ; done
+
+modules_clean:
+	for i in $$(find modules -iname 'Makefile') ; do pushd $$(dirname $$i) && make clean && popd ; done
 
 .PHONY: doc
 doc:
@@ -227,7 +233,7 @@ def main(_):
     sys.stdout.write('tests: ' + '\\\n    '.join(test_binaries))
     sys.stdout.write('\n\n')
 
-    sys.stdout.write('all: tests notests')
+    sys.stdout.write('all: tests notests modules')
     sys.stdout.write('\n\n')
 
     sys.stdout.write(MAKEFILE_FOOTER)
