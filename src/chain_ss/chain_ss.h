@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "blocking_queue.h"
+#include "exported_structures.h"
 
 #include <pthread.h>
 #include "chain.h"
@@ -23,10 +24,8 @@ struct chain_raw_packet_data {
     void (*next_handler)(struct chain_raw_packet_data* data);
     struct chain_rule* current_chain_rule;
     struct chain_ctx* issuer;
-    bool packet_continue;
 
-    size_t sz;
-    u8_t* bytes;
+    struct airstat_packet packet_data;
 };
 
 

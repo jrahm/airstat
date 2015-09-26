@@ -1,6 +1,8 @@
 #ifndef SRC_PLUGIN_
 #define SRC_PLUGIN_
 
+#include "exported_structures.h"
+
 #define AIRSTAT_PLUGIN(type, name) \
     const char* get_airstat_plugin_type() { return #type; } \
     const char* get_airstat_plugin_name() { return "TestPlugin"; }

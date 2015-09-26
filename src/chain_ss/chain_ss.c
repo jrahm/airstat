@@ -7,7 +7,7 @@
 
 void packet_delete(struct chain_raw_packet_data* data)
 {
-    free(data->bytes);
+    free(data->packet_data.bytes);
     free(data);
 }
 
@@ -72,8 +72,8 @@ void on_packet_event__(void* ctx_, struct packet_event* evt)
 
     struct chain_raw_packet_data *chain_packet;
     chain_packet = calloc(sizeof(struct chain_raw_packet_data), 1);
-    chain_packet->bytes = evt->data.chrs;
-    chain_packet->sz = evt->data.sz;
+    chain_packet->packet_data.bytes = evt->data.chrs;
+    chain_packet->packet_data.sz = evt->data.sz;
 
     chain_packet->current_chain_rule = ctx->m_chain_set_.ether_chain_head;
     chain_packet->next_handler = to_handler(ether_chain_handle_BEGIN);
