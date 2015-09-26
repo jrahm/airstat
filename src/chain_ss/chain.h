@@ -22,8 +22,8 @@ struct pattern {
 
     u8_t dest_mac_addr[6];
     u8_t src_mac_addr[6];
-    
-    uint32_t src_ip4_addr; 
+
+    uint32_t src_ip4_addr;
     uint32_t dest_ip4_addr;
 
     uint16_t src_ip_port;

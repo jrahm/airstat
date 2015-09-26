@@ -5,6 +5,7 @@
 #include "bus.h"
 #include "events.h"
 #include "chain_ss/chain.h"
+#include "chain_ss/chain_ss.h"
 
 #include <stdio.h>
 
@@ -12,6 +13,8 @@ int main(int argc, char** argv)
 {
     int raw_socket, ret;
     options_t opts;
+    struct chain_set* chains;
+    struct chain_ctx* chain_context;
 
     global_bus = new_bus();
     if(bus_start(NULL, global_bus)) {
@@ -19,30 +22,32 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    struct chain_set* chains;
     chains = parse_chains_from_file("tmp.conf");
     if(!chains) {
         printf("Error parsing chains: %s\n", get_error());
-    } else {
-        printf("Ether: ");
-        print_chain(chains->ether_chain_head);
-        printf("\nIp:    ");
-        print_chain(chains->ip_chain_head);
-        printf("\nTcp:   ");
-        print_chain(chains->tcp_chain_head);
-        printf("\nUdp:   ");
-        print_chain(chains->udp_chain_head);
-        printf("\n");
-
-        free_chain(chains->ether_chain_head);
-        free_chain(chains->ip_chain_head);
-        free_chain(chains->tcp_chain_head);
-        free_chain(chains->udp_chain_head);
-        free(chains);
+        return 1;
     }
 
-    init_packet_handlers();
-    init_iphdr_ss();
+    printf("Ether: ");
+    print_chain(chains->ether_chain_head);
+    printf("\nIp:    ");
+    print_chain(chains->ip_chain_head);
+    printf("\nTcp:   ");
+    print_chain(chains->tcp_chain_head);
+    printf("\nUdp:   ");
+    print_chain(chains->udp_chain_head);
+    printf("\n");
+
+    chain_context = create_chain_ctx(1, chains);
+    if(!chain_context) {
+        fprintf(stderr, "Failed to create chain context\n");
+        return 2;
+    }
+
+    if(start_chain_ctx(chain_context)) {
+        fprintf(stderr, "Failed to start chain context");
+        return 3;
+    }
 
     ret = parse_options(&opts, argc, argv);
     if(ret) {
