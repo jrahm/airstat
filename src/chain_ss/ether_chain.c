@@ -4,6 +4,7 @@
 
 typedef void (*handler_t)(struct chain_raw_packet_data*);
 
+static void print_hex(const u8_t* chrs, size_t sz);
 static int packet_matches_pattern(struct chain_raw_packet_data* data,
                                   struct pattern* pat)
 {
@@ -13,12 +14,16 @@ static int packet_matches_pattern(struct chain_raw_packet_data* data,
     struct ether_header* as_ether_header;
     as_ether_header = (struct ether_header*) data->bytes;
 
-    if(!memcmp(as_ether_header->ether_dhost, pat->dest_mac_addr, 6) &&
-        memcmp(as_ether_header->ether_shost, pat->src_mac_addr, 6)) {
-        return 1;
-    }
+    int ret = 1;
+    int flags = pat->features;
 
-    return 0;
+    if(flags & HAS_SRC_MAC_ADDR)
+        ret &= !memcmp(as_ether_header->ether_shost, pat->src_mac_addr, 6);
+
+    if(flags & HAS_DEST_MAC_ADDR)
+        ret &= !memcmp(as_ether_header->ether_dhost, pat->dest_mac_addr, 6);
+
+    return ret;
 }
 
 static void print_hex(const u8_t* chrs, size_t sz)

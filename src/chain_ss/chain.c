@@ -96,6 +96,14 @@ static const char* next_word(const char* in, char* out, size_t len)
     return in;
 }
 
+static u8_t from_hex(char ch)
+{
+    if(ch < 0x40 && ch > 0x30) return ch - 0x30;
+    if(ch >= 0x41 && ch <= 0x46) return (ch - 0x41) + 10;
+    if(ch >= 0x61 && ch <= 0x66) return (ch - 0x61) + 10;
+    return 255;
+}
+
 static int parse_mac_addr(u8_t* mac, const char* value)
 {
     size_t i = 0;
@@ -103,28 +111,28 @@ static int parse_mac_addr(u8_t* mac, const char* value)
 
     if(strlen(value) != 17) return 1;
 
-    mac[i] = (value[j++] - 0x30) << 4;
-    mac[i++] += value[j++] - 0x30;
+    mac[i] = from_hex(value[j++]) << 4;
+    mac[i++] += from_hex(value[j++]);
     if(value[j++] != ':') return 1;
 
-    mac[i] = (value[j++] - 0x30) << 4;
-    mac[i++] += value[j++] - 0x30;
+    mac[i] = from_hex(value[j++]) << 4;
+    mac[i++] += from_hex(value[j++]);
     if(value[j++] != ':') return 1;
 
-    mac[i] = (value[j++] - 0x30) << 4;
-    mac[i++] += value[j++] - 0x30;
+    mac[i] = from_hex(value[j++]) << 4;
+    mac[i++] += from_hex(value[j++]);
     if(value[j++] != ':') return 1;
 
-    mac[i] = (value[j++] - 0x30) << 4;
-    mac[i++] += value[j++] - 0x30;
+    mac[i] = from_hex(value[j++]) << 4;
+    mac[i++] += from_hex(value[j++]);
     if(value[j++] != ':') return 1;
 
-    mac[i] = (value[j++] - 0x30) << 4;
-    mac[i++] += value[j++] - 0x30;
+    mac[i] = from_hex(value[j++]) << 4;
+    mac[i++] += from_hex(value[j++]);
     if(value[j++] != ':') return 1;
 
-    mac[i] = (value[j++] - 0x30) << 4;
-    mac[i++] += value[j++] - 0x30;
+    mac[i] = from_hex(value[j++]) << 4;
+    mac[i++] += from_hex(value[j++]);
 
     return 0;
 }
