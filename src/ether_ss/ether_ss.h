@@ -16,7 +16,6 @@ struct ether_rule {
 
     enum {
         ETHER_RULE_GOTO,
-        ETHER_RULE_
     } m_type;
 };
 

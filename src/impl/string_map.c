@@ -6,7 +6,7 @@
 
 struct string_map_node {
     RB_ENTRY(string_map_node) entry;
-    
+
     char* key;
     void* value;
 };
