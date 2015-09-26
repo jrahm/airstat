@@ -44,14 +44,14 @@ struct BUS__EVENT__ {
         struct BUS__EVENT__ super; \
         evt_internal data; \
     }; \
-    struct evt_name* new_##evt_name(const evt_internal* in, event_id_t id); \
+    struct evt_name* new_##evt_name(evt_internal* in, event_id_t id); \
     void bus___enqueue_##evt_name##___(bus_t*b, struct evt_name* evt); \
     void bus___##evt_name##_bind___(bus_t* bus, \
         void(*handler)(void* extrnl_data, struct evt_name* evt), \
         void* extrnl_data, event_id_t evt_id);
 
 #define DEFINE_EVENT_TYPE(EVT_NAME, EVT_INTERNAL, INTERNAL_DESTRUCTOR) \
-    struct EVT_NAME* new_##EVT_NAME(const EVT_INTERNAL* internal, event_id_t id) { \
+    struct EVT_NAME* new_##EVT_NAME(EVT_INTERNAL* internal, event_id_t id) { \
         struct EVT_NAME* ret = malloc(sizeof(struct EVT_NAME)); \
         memset(ret, 0, sizeof(struct EVT_NAME)); \
         ret->super.evt_type = #EVT_NAME; \

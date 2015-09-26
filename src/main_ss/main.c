@@ -10,6 +10,7 @@
 
 int main(int argc, char** argv)
 {
+    printf("starting airstat!\n");
     int raw_socket, ret;
     options_t opts;
 
@@ -18,6 +19,7 @@ int main(int argc, char** argv)
         perror("Failed to start communication bus.");
         exit(1);
     }
+    printf("Communication bus started!\n");
 
     struct chain_set* chains;
     chains = parse_chains_from_file("tmp.conf");

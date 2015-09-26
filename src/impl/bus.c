@@ -211,7 +211,9 @@ int bus_start(pthread_t* out, bus_t* bus)
 {
     pthread_t ret;
     int rc;
+    printf("Pthread_create.\n");
     rc = pthread_create(&ret, NULL, bus_pthread_main, bus);
+    printf("/Pthtread_create.\n");
     if(out) *out = ret;
     return rc;
 }
