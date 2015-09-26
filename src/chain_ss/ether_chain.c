@@ -111,7 +111,10 @@ void ether_chain_handle_continue(struct chain_raw_packet_data* data)
 
 void ether_chain_handle_drop(struct chain_raw_packet_data* data)
 {
-    int match = packet_matches_pattern(data, data->current_chain_rule->m_pattern);
+    struct chain_rule *rule = data->current_chain_rule;
+    struct pattern *pat = rule->m_pattern;
+    int match = packet_matches_pattern(data, pat);
+
     if(match) {
         data->next_handler = NULL;
     } else {
