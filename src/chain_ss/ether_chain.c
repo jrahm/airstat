@@ -130,7 +130,10 @@ void ether_chain_handle_call(struct chain_raw_packet_data* data)
 
 void ether_chain_handle_log(struct chain_raw_packet_data* data)
 {
-    int match = packet_matches_pattern(data, data->current_chain_rule->m_pattern);
+    struct chain_rule *rule = data->current_chain_rule;
+    struct pattern *pat = rule->m_pattern;
+    int match = packet_matches_pattern(data, pat);
+
     if(match) {
         print_hex(data->bytes, data->sz);
     }
@@ -141,8 +144,17 @@ void ether_chain_handle_log(struct chain_raw_packet_data* data)
 
 void ether_chain_handle_goto(struct chain_raw_packet_data* data)
 {
-    data->current_chain_rule = data->current_chain_rule->next;
-    ether_chain_handle_BEGIN(data);
+    struct chain_rule *rule = data->current_chain_rule;
+    struct pattern *pat = rule->m_pattern;
+    int match = packet_matches_pattern(data, pat);
 
-    fprintf(stderr, "goto NOT implemented\n");
+    if(match) {
+        data->current_chain_rule =
+            data->current_chain_rule->goto_chain;
+    } else {
+        data->current_chain_rule =
+            data->current_chain_rule->next;
+    }
+
+    ether_chain_handle_BEGIN(data);
 }
