@@ -95,7 +95,7 @@ CFLAGS := ''' + str(platform_cflags) + ''' -I ''' + " -I ".join(INCLUDE_DIRS) + 
 HACK  := $(shell mkdir -p _$(TGT)_obs/)
 HACK2 := $(shell mkdir -p _$(TGT)_obs/tests/)
 
-LDFLAGS := ''' + str(platform_ldflags) + ''' $(LDFLAGS) -lpthread -lc
+LDFLAGS := ''' + str(platform_ldflags) + ''' $(LDFLAGS) -lpthread -lc -ldl
 
 QEMU?=
 export QEMU

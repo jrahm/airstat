@@ -6,6 +6,7 @@
 #include "events.h"
 #include "chain_ss/chain.h"
 #include "chain_ss/chain_ss.h"
+#include "plugin_ss/plugin_ss.h"
 
 #include <stdio.h>
 
@@ -15,12 +16,19 @@ int main(int argc, char** argv)
     options_t opts;
     struct chain_set* chains;
     struct chain_ctx* chain_context;
+    struct plugin* plugin_chain;
 
     global_bus = new_bus();
     if(bus_start(NULL, global_bus)) {
         perror("Failed to start communication bus.");
         exit(1);
     }
+
+    plugin_chain = load_plugins("plugins");
+    if(!plugin_chain) {
+        fprintf(stderr, "Failed to read plugins: %s\n", plugin_error);
+    }
+    print_plugin_chain(stdout, plugin_chain);
 
     chains = parse_chains_from_file("tmp.conf");
     if(!chains) {
