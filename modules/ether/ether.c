@@ -56,7 +56,6 @@ error:
 
 int get_airstat_fd(struct ether_context* ctx)
 {
-    printf("returning %d\n", ctx->fd);
     return ctx->fd;
 }
 
@@ -131,7 +130,7 @@ error:
 
 static u8_t from_hex(char ch)
 {
-    if(ch < 0x40 && ch > 0x30) return ch - 0x30;
+    if(ch < 0x40 && ch >= 0x30) return ch - 0x30;
     if(ch >= 0x41 && ch <= 0x46) return (ch - 0x41) + 10;
     if(ch >= 0x61 && ch <= 0x66) return (ch - 0x61) + 10;
     return 255;
