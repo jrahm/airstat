@@ -353,13 +353,13 @@ static struct string_map* plugins_to_link_map(struct plugin* plugins)
 {
     struct string_map* ret = new_string_map();
     struct plugin* cursor = plugins;
-    struct consumer_routine* routine;
+    struct sink_routine* routine;
     size_t i;
 
     while(cursor != NULL) {
-        if(cursor->type == PLUGIN_TYPE_CONSUMER) {
-            for(i = 0; i < cursor->consumer.n_routines; ++ i) {
-                routine = &cursor->consumer.routines[i];
+        if(cursor->type == PLUGIN_TYPE_SINK) {
+            for(i = 0; i < cursor->sink.n_routines; ++ i) {
+                routine = &cursor->sink.routines[i];
                 string_map_insert(ret, routine->name, routine->routine);
             }
         }

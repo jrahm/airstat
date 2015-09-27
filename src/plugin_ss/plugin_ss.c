@@ -40,14 +40,13 @@ static int get_plugin_type(void* so_handle, char* out_type, size_t n)
         return 1;
     }
 
-    printf("well this is a pain in the ass!! = %s\n", get_type());
     snprintf(out_type, n, "%s", get_type());
     return 0;
 }
 
-static int make_consumer_plugin(void* handle, struct plugin** out)
+static int make_sink_plugin(void* handle, struct plugin** out)
 {
-    struct consumer_routine*(*get_routines)(size_t*);
+    struct sink_routine*(*get_routines)(size_t*);
 
     const char* (*get_name)();
     get_name = dlsym(handle, "get_airstat_plugin_name");
@@ -64,9 +63,9 @@ static int make_consumer_plugin(void* handle, struct plugin** out)
     }
 
     *out = new_plugin();
-    (*out)->type = PLUGIN_TYPE_CONSUMER;
+    (*out)->type = PLUGIN_TYPE_SINK;
     (*out)->name = strdup(get_name());
-    (*out)->consumer.routines = get_routines(&(*out)->consumer.n_routines);
+    (*out)->sink.routines = get_routines(&(*out)->sink.n_routines);
 
     return 0;
 }
@@ -88,8 +87,8 @@ static int read_plugin(const char* filepath, struct plugin** out)
     rc = get_plugin_type(handle, type, 127);
     if(rc) goto error;
 
-    if(!strcmp(type, "CONSUMER")) {
-        rc = make_consumer_plugin(handle, out);
+    if(!strcmp(type, "SINK")) {
+        rc = make_sink_plugin(handle, out);
         if(rc) goto error;
     } else {
         /* other plugin types not implemented */
@@ -161,10 +160,10 @@ static void print_one_plugin(FILE* out, struct plugin* pl)
 {
     size_t i;
     fprintf(out, "Plugin %s loaded type %d\n", pl->name, pl->type);
-    if(pl->type == PLUGIN_TYPE_CONSUMER) {
-        for(i = 0; i < pl->consumer.n_routines; ++ i) {
-            fprintf(out, "    Consumer %s %p\n", pl->consumer.routines[i].name
-                                               , pl->consumer.routines[i].routine);
+    if(pl->type == PLUGIN_TYPE_SINK) {
+        for(i = 0; i < pl->sink.n_routines; ++ i) {
+            fprintf(out, "    Sink %s %p\n", pl->sink.routines[i].name
+                                               , pl->sink.routines[i].routine);
         }
     }
 }

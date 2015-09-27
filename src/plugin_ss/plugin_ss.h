@@ -5,10 +5,10 @@
 #include <stdio.h>
 
 enum plugin_type {
-    PLUGIN_TYPE_CONSUMER
+    PLUGIN_TYPE_SINK
 };
 
-struct consumer_routine {
+struct sink_routine {
     char* name;
     void* routine;
 };
@@ -21,8 +21,8 @@ struct plugin {
         struct {
             /* not owned by this structure! */
             size_t n_routines;
-            struct consumer_routine* routines;
-        } consumer;
+            struct sink_routine* routines;
+        } sink;
     };
 
     struct plugin* next_plugin;
