@@ -8,7 +8,17 @@
  * string_map.h: <description>
  */
 
-struct string_map;
+struct string_map_;
+struct string_map {
+    struct string_map_* map;
+
+    void* (*insert)(struct string_map* ths, const char* key, void* value);
+    void* (*remove)(struct string_map* map, const char* key);
+    int   (*has_key)(struct string_map* map, const char* key);
+    void* (*get)(struct string_map* map, const char* key);
+    void  (*free)(struct string_map* map, void(*)(void*));
+};
+
 typedef struct string_map string_map_t;
 
 struct string_map* new_string_map();
