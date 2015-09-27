@@ -3,9 +3,15 @@
 
 #include "exported_structures.h"
 
-#define AIRSTAT_PLUGIN(type, name) \
-    const char* get_airstat_plugin_type() { return #type; } \
-    const char* get_airstat_plugin_name() { return "TestPlugin"; }
+#define AIRSTAT_SOURCE_PLUGIN(name, magic) \
+    const char* get_airstat_plugin_type() { return "SOURCE"; } \
+    const char* get_airstat_plugin_name() { return name; } \
+    u32_t get_airstat_plugin_magic() { return magic; } \
+
+
+#define AIRSTAT_SINK_PLUGIN(name) \
+    const char* get_airstat_plugin_type() { return "SINK"; } \
+    const char* get_airstat_plugin_name() { return name; }
 
 #define AIRSTAT_EXPORT_BEGIN() \
     struct airstat_export_plugin_routine_ { \

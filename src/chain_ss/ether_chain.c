@@ -6,24 +6,11 @@ typedef void (*handler_t)(struct chain_raw_packet_data*);
 
 static void print_hex(const u8_t* chrs, size_t sz);
 static int packet_matches_pattern(struct chain_raw_packet_data* data,
-                                  struct pattern* pat)
+                                  pattern_t* pat)
 {
     /* NULL pattern matches everything */
     if(pat == NULL) return 1;
-
-    struct ether_header* as_ether_header;
-    as_ether_header = (struct ether_header*) data->packet_data.bytes;
-
-    int ret = 1;
-    int flags = pat->features;
-
-    if(flags & HAS_SRC_MAC_ADDR)
-        ret &= !memcmp(as_ether_header->ether_shost, pat->src_mac_addr, 6);
-
-    if(flags & HAS_DEST_MAC_ADDR)
-        ret &= !memcmp(as_ether_header->ether_dhost, pat->dest_mac_addr, 6);
-
-    return ret;
+    return pat->pattern_matches(&data->packet_data, pat);
 }
 
 static void print_hex(const u8_t* chrs, size_t sz)
@@ -62,22 +49,22 @@ static handler_t rule_type_to_handler(int type)
     void (*ret)(struct chain_raw_packet_data*);
     switch (type) {
         case RULE_TYPE_RETURN:
-            ret = ether_chain_handle_return;
+            ret = chain_handle_return;
             break;
         case RULE_TYPE_CONTINUE:
-            ret = ether_chain_handle_continue;
+            ret = chain_handle_continue;
             break;
         case RULE_TYPE_DROP:
-            ret = ether_chain_handle_drop;
+            ret = chain_handle_drop;
             break;
         case RULE_TYPE_CALL:
-            ret = ether_chain_handle_call;
+            ret = chain_handle_call;
             break;
         case RULE_TYPE_GOTO:
-            ret = ether_chain_handle_goto;
+            ret = chain_handle_goto;
             break;
         case RULE_TYPE_LOG:
-            ret = ether_chain_handle_log;
+            ret = chain_handle_log;
             break;
         default:
             fprintf(stderr, "No handler for type: %d **THIS IS A BUG**", type);
@@ -86,7 +73,7 @@ static handler_t rule_type_to_handler(int type)
     return ret;
 }
 
-void ether_chain_handle_BEGIN(struct chain_raw_packet_data* data)
+void chain_handle_BEGIN(struct chain_raw_packet_data* data)
 {
     struct chain_rule* current_rule;
     current_rule = data->current_chain_rule;
@@ -95,48 +82,48 @@ void ether_chain_handle_BEGIN(struct chain_raw_packet_data* data)
         data->next_handler = rule_type_to_handler(current_rule->m_type);
     } else {
         /* default behavior of continue */
-        data->next_handler = ether_chain_handle_continue;
+        data->next_handler = chain_handle_continue;
     }
 }
 
-void ether_chain_handle_return(struct chain_raw_packet_data* data)
+void chain_handle_return(struct chain_raw_packet_data* data)
 {
     fprintf(stderr, "return NOT implemented\n");
 }
 
-void ether_chain_handle_continue(struct chain_raw_packet_data* data)
+void chain_handle_continue(struct chain_raw_packet_data* data)
 {
     fprintf(stderr, "continue NOT implemented\n");
 }
 
-void ether_chain_handle_drop(struct chain_raw_packet_data* data)
+void chain_handle_drop(struct chain_raw_packet_data* data)
 {
     struct chain_rule *rule = data->current_chain_rule;
-    struct pattern *pat = rule->m_pattern;
+    pattern_t* pat = rule->m_pattern;
     int match = packet_matches_pattern(data, pat);
 
     if(match) {
         data->next_handler = NULL;
     } else {
         data->current_chain_rule = data->current_chain_rule->next;
-        ether_chain_handle_BEGIN(data);
+        chain_handle_BEGIN(data);
     }
 }
 
-void ether_chain_handle_call(struct chain_raw_packet_data* data)
+void chain_handle_call(struct chain_raw_packet_data* data)
 {
     if(data->current_chain_rule &&
         data->current_chain_rule->call_fn) {
         data->current_chain_rule->call_fn(&data->packet_data);
     }
     data->current_chain_rule = data->current_chain_rule->next;
-    ether_chain_handle_BEGIN(data);
+    chain_handle_BEGIN(data);
 }
 
-void ether_chain_handle_log(struct chain_raw_packet_data* data)
+void chain_handle_log(struct chain_raw_packet_data* data)
 {
     struct chain_rule *rule = data->current_chain_rule;
-    struct pattern *pat = rule->m_pattern;
+    pattern_t *pat = rule->m_pattern;
     int match = packet_matches_pattern(data, pat);
 
     if(match) {
@@ -144,13 +131,13 @@ void ether_chain_handle_log(struct chain_raw_packet_data* data)
     }
 
     data->current_chain_rule = data->current_chain_rule->next;
-    ether_chain_handle_BEGIN(data);
+    chain_handle_BEGIN(data);
 }
 
-void ether_chain_handle_goto(struct chain_raw_packet_data* data)
+void chain_handle_goto(struct chain_raw_packet_data* data)
 {
     struct chain_rule *rule = data->current_chain_rule;
-    struct pattern *pat = rule->m_pattern;
+    pattern_t *pat = rule->m_pattern;
     int match = packet_matches_pattern(data, pat);
 
     if(match) {
@@ -161,5 +148,5 @@ void ether_chain_handle_goto(struct chain_raw_packet_data* data)
             data->current_chain_rule->next;
     }
 
-    ether_chain_handle_BEGIN(data);
+    chain_handle_BEGIN(data);
 }

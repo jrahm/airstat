@@ -4,8 +4,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "chain_ss/chain.h"
+#include "exported_structures.h"
+
+struct string_map;
+
 enum plugin_type {
-    PLUGIN_TYPE_SINK
+      PLUGIN_TYPE_SINK
+    , PLUGIN_TYPE_SOURCE
 };
 
 struct sink_routine {
@@ -23,6 +29,37 @@ struct plugin {
             size_t n_routines;
             struct sink_routine* routines;
         } sink;
+
+        struct {
+            /* Each source has to have a type associated with it */
+            u32_t magic;
+
+            /* Initializes the plugin. It initializes the context
+             * in ctx_out and returns an error code if the routine fails. */
+            int (*init_routine)(int argc, char** argv, void** ctx_out);
+
+            /* Routine to construct the file descriptor to listen on.
+             * The main program will the use poll to extract the packet
+             * from the routine */
+            int   (*fd_routine)(void*);
+
+            /* Once the file descriptor fires, we then call this
+             * routine on the correct plugin to create the packet */
+            airstat_packet_t* (*read_packet_routine)(void*, int);
+
+            /* This is used in the chain compilation phase, it constructs
+             * a pattern using the string map provided */
+            pattern_t* (*compile_pattern)(void*, struct string_map* st);
+
+            /* The name of the default chain to use */
+            char* init_chain;
+
+            /* Not provided by the plugin, rather it is 'linked' by
+             * the name */
+            struct chain_rule* start_chain;
+            
+            void* ctx;
+        } source;
     };
 
     struct plugin* next_plugin;

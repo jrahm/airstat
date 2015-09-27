@@ -83,6 +83,7 @@ static int make_source_plugin(void* handle, struct plugin** out)
     char* init_chain;
     char*(*get_init_chain)();
     const char* (*get_name)();
+    u32_t (*get_type)();
 
     const char* error;
 
@@ -90,8 +91,9 @@ static int make_source_plugin(void* handle, struct plugin** out)
     get_init_chain = DLGET("get_airstat_initial_chain");
     init     = DLGET("airstat_plugin_initialize")
     mkpacket = DLGET("get_airstat_packet")
-    mkpattern = DLGET("parse_airstat_pattern")
+    mkpattern = DLGET("compile_airstat_pattern")
     mkfd = DLGET("get_airstat_fd")
+    get_type = DLGET("get_airstat_plugin_magic")
     init_chain = get_init_chain();
 
     *out = new_plugin();
@@ -100,9 +102,10 @@ static int make_source_plugin(void* handle, struct plugin** out)
     (*out)->source.init_routine = init;
     (*out)->source.fd_routine = mkfd;
     (*out)->source.read_packet_routine = mkpacket;
-    (*out)->source.make_pattern = mkpattern;
+    (*out)->source.compile_pattern = mkpattern;
     (*out)->source.init_chain = strdup(init_chain);
     (*out)->source.start_chain = NULL;
+    (*out)->source.magic = get_type();
 
     return 0;
 error:

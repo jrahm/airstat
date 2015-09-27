@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include "types.h"
+#include "exported_structures.h"
 
 #define HAS_DEST_MAC_ADDR 0x1
 #define HAS_SRC_MAC_ADDR 0x2
@@ -32,8 +32,6 @@ struct pattern {
     struct pattern_handler* handlers;
 };
 
-void print_pattern(struct pattern* pat) ;
-
 struct hdr {
     int m_type;
     void(*matches)(void* self, struct pattern* pattern);
@@ -49,7 +47,7 @@ enum chain_rule_type {
 };
 
 struct chain_rule {
-    struct pattern* m_pattern;
+    pattern_t* m_pattern;
     struct chain_rule* next;
 
     int m_ref; /* reference count */
@@ -62,20 +60,24 @@ struct chain_rule {
     };
 };
 
+struct chain_parse_ctx {
+    /* the context used while parsing chains */
+    struct plugin*     start_plugin_chain;
+    struct string_map* plugin_map_by_name;
+    struct string_map* link_map;
+};
+
 /*
  * Set of chains for the packets to filter through
  */
 struct chain_set {
-    struct chain_rule* ether_chain_head;
-    struct chain_rule* ip_chain_head;
-    struct chain_rule* tcp_chain_head;
-    struct chain_rule* udp_chain_head;
+    struct string_map* chains;
 };
 
 const char* get_error();
 
 struct plugin;
-struct chain_set* parse_chains_from_file(const char* filename, struct plugin*);
+struct chain_set* parse_chains_from_file(const char* filename, struct chain_parse_ctx*);
 
 void free_chain(struct chain_rule* chain);
 void print_chain(struct chain_rule* chain);

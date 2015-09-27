@@ -75,8 +75,9 @@ void on_packet_event__(void* ctx_, struct packet_event* evt)
     chain_packet->packet_data.bytes = evt->data.chrs;
     chain_packet->packet_data.sz = evt->data.sz;
 
-    chain_packet->current_chain_rule = ctx->m_chain_set_.ether_chain_head;
-    chain_packet->next_handler = to_handler(ether_chain_handle_BEGIN);
+    // TODO: this is not general
+    chain_packet->current_chain_rule = string_map_get(ctx->m_chain_set_.chains, "ether");
+    chain_packet->next_handler = to_handler(chain_handle_BEGIN);
 
     blocking_queue_add(ctx->m_packet_queue_, chain_packet);
 }

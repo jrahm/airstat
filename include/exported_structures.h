@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "types.h"
 #include "string_map.h"
+#include <stdio.h>
 
 
 typedef struct packet_data {
@@ -24,6 +25,7 @@ typedef struct airstat_packet {
 typedef struct airstat_pattern {
     int type;
     int (*pattern_matches)(airstat_packet_t*, struct airstat_pattern* ths);
+    void (*print)(struct airstat_pattern* ths, FILE* out);
 
     /* rest to be defined */
 } pattern_t ;

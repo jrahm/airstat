@@ -5,11 +5,7 @@
 
 #include "bus.h"
 #include "types.h"
-
-struct packet_data {
-    u8_t* chrs;
-    size_t sz;
-};
+#include "exported_structures.h"
 
 DECLARE_EVENT_TYPE(packet_event, struct packet_data);
 

@@ -138,41 +138,21 @@ static int parse_mac_addr(u8_t* mac, const char* value)
     return 0;
 }
 
-static void add_key_to_pattern(struct pattern* pat, const char* key, const char* val)
+static struct string_map* pattern_to_string_map(const char* pat)
 {
-    if(!strcmp(key, "src_mac")) {
-        if(parse_mac_addr(pat->src_mac_addr, val)) {
-            fprintf(stderr, "Failed to parse mac address '%s'", val);
-        } else {
-            pat->features |= HAS_SRC_MAC_ADDR;
-        }
-    } else if(!strcmp(key, "dest_mac")) {
-        if(parse_mac_addr(pat->dest_mac_addr, val)) {
-            fprintf(stderr, "Failed to parse mac address '%s'", val);
-        } else {
-            pat->features |= HAS_DEST_MAC_ADDR;
-        }
-    } else {
-        fprintf(stderr, "WARN: unimplemented key: %s\n", key);
-    }
-}
-
-struct pattern* compile_pattern(const char* pat)
-{
-    printf("Compile: %s\n", pat);
-    char word[1024];
     char* ptr;
-    struct pattern* ret = calloc(sizeof(struct pattern), 1);
-    pat = next_word(pat, word, sizeof(word));
+    char word[1024];
+    struct string_map* ret = new_string_map();
 
+    pat = next_word(pat, word, sizeof(word));
     while(word[0]) {
         ptr = strchr(word, '=');
         if(ptr) {
             *ptr = 0;
             ptr ++;
-            add_key_to_pattern(ret, word, ptr);
+            ret->insert(ret, word, strdup(ptr));
         } else {
-            fprintf(stderr, "handles (%s) not yet implemented\n", word);
+            fprintf(stderr, "WARNING: key %s with no value", word);
             /* it is a handle now */;
         }
         pat = next_word(pat, word, sizeof(word));
@@ -181,16 +161,49 @@ struct pattern* compile_pattern(const char* pat)
     return ret;
 }
 
-struct chain_rule* read_one_chain_rule(char* token, FILE* fd, string_map_t* strmap)
+pattern_t* compile_pattern(const char* pat, struct chain_parse_ctx* ctx)
+{
+    char plugin_name[1024];
+    struct string_map* token_map;
+    pattern_t* ret = NULL;
+
+    if(*pat != '@') {
+        fprintf(stderr, "Missing plugin identifier");
+        return NULL;
+    }
+
+    pat ++;
+    pat = next_word(pat, plugin_name, sizeof(plugin_name));
+    token_map = pattern_to_string_map(pat);
+
+    struct plugin* pl;
+    if(!string_map_has_key(ctx->plugin_map_by_name, plugin_name)) {
+        fprintf(stderr, "WARNING: unknown plugin %s. Ignoring\n", plugin_name);
+        goto finally;
+    }
+
+    pl = string_map_get(ctx->plugin_map_by_name, plugin_name);
+    if(pl->type != PLUGIN_TYPE_SOURCE) {
+        fprintf(stderr, "WARNING: plugin %s is a SINK, not a SOURCE!\n", plugin_name);
+        goto finally;
+    }
+
+    ret = pl->source.compile_pattern(pl->source.ctx, token_map);
+finally:
+    string_map_free(token_map, free);
+    return ret;
+}
+
+struct chain_rule* read_one_chain_rule(char* token, FILE* fd, string_map_t* strmap, struct chain_parse_ctx* ctx)
 {
     struct chain_rule* ret = calloc(sizeof(struct chain_rule), 1);
-    struct pattern* pat = NULL;
+    pattern_t* pat = NULL;
     char* goto_name;
 
     if(token[0] == '(') {
         free(token);
         token = next_token_skip_space(fd, NULL, not_paren);
-        pat = compile_pattern(token);
+        pat = compile_pattern(token, ctx);
         free(token);
         token = next_token_skip_space(fd, NULL, not_paren);
         if(strcmp(token, ")") != 0) {
@@ -279,7 +292,7 @@ static int link_chain(struct chain_rule* chainr, struct string_map* link_map)
     return link_chain(chainr->next, link_map);
 }
 
-struct chain_rule* read_chain(FILE* fd, string_map_t* chain_map, string_map_t* linkmap)
+struct chain_rule* read_chain(FILE* fd, string_map_t* chain_map, struct chain_parse_ctx* ctx)
 {
     /* read a single chain from the file
      * given above. This already assumes
@@ -320,7 +333,7 @@ struct chain_rule* read_chain(FILE* fd, string_map_t* chain_map, string_map_t* l
                 sprintf(error, "Unexpected EOF while parsing chain\n");
                 goto error;
             } else {
-                tmp = read_chain(fd, chain_map, linkmap);
+                tmp = read_chain(fd, chain_map, ctx);
                 if(tmp) {
                     string_map_insert(chain_map, token, tmp);
                     free(token);
@@ -330,7 +343,7 @@ struct chain_rule* read_chain(FILE* fd, string_map_t* chain_map, string_map_t* l
                 }
             }
         } else {
-            tmp = read_one_chain_rule(token, fd, chain_map);
+            tmp = read_one_chain_rule(token, fd, chain_map, ctx);
             if(tmp) {
                 cursor->next = tmp;
                 cursor = cursor->next;
@@ -340,7 +353,7 @@ struct chain_rule* read_chain(FILE* fd, string_map_t* chain_map, string_map_t* l
         }
     }
 
-    if(link_chain(super_head.next, linkmap))
+    if(link_chain(super_head.next, ctx->link_map))
         goto error;
 
     return super_head.next;
@@ -370,12 +383,12 @@ static struct string_map* plugins_to_link_map(struct plugin* plugins)
 }
 
 
-struct string_map* read_chains(FILE* fd, struct plugin* plugins)
+struct string_map* read_chains(FILE* fd, struct chain_parse_ctx* ctx)
 {
     char* chain = NULL;
     char* name = NULL;
     string_map_t* ret = new_string_map();
-    string_map_t* link_map = plugins_to_link_map(plugins);
+    ctx->link_map = plugins_to_link_map(ctx->start_plugin_chain);
     struct chain_rule* chainr;
 
     while(1) {
@@ -395,7 +408,7 @@ struct string_map* read_chains(FILE* fd, struct plugin* plugins)
             goto error;
         }
 
-        chainr = read_chain(fd, ret, link_map);
+        chainr = read_chain(fd, ret, ctx);
 
         if(!chainr) goto error;
 
@@ -406,10 +419,12 @@ struct string_map* read_chains(FILE* fd, struct plugin* plugins)
         name = chain = NULL;
     }
 
-    string_map_free(link_map, NULL);
+    string_map_free(ctx->link_map, NULL);
+    ctx->link_map = NULL;
     return ret;
 error:
-    string_map_free(link_map, NULL);
+    string_map_free(ctx->link_map, NULL);
+    ctx->link_map = NULL;
 
     free(chain);
     free(name);
@@ -429,7 +444,7 @@ void test_incref(struct chain_rule* rule)
     }
 }
 
-struct chain_set* parse_chains_from_file(const char* filename, struct plugin* plugins)
+struct chain_set* parse_chains_from_file(const char* filename, struct chain_parse_ctx* ctx)
 {
     FILE* fd;
     fd = fopen(filename, "r");
@@ -437,24 +452,15 @@ struct chain_set* parse_chains_from_file(const char* filename, struct plugin* pl
         sprintf(error, "Unable to open file: %s", filename);
         return NULL;
     }
-    string_map_t* map = read_chains(fd, plugins);
+    string_map_t* map = read_chains(fd, ctx);
     if(!map) {
         return NULL;
     }
 
     struct chain_set* ret = malloc(sizeof(struct chain_set));
 
-    ret->ether_chain_head = string_map_get(map, "ether");
-    ret->ip_chain_head = string_map_get(map, "ip");
-    ret->tcp_chain_head = string_map_get(map, "tcp");
-    ret->udp_chain_head = string_map_get(map, "udp");
+    ret->chains = map;
 
-    test_incref(ret->ether_chain_head);
-    test_incref(ret->ip_chain_head);
-    test_incref(ret->tcp_chain_head);
-    test_incref(ret->udp_chain_head);
-
-    string_map_free(map, (void(*)(void*))(try_delete_chain));
     return ret;
 }
 
@@ -488,7 +494,9 @@ void print_chain(struct chain_rule* chain)
     if(chain == NULL) {
         printf("(null)");
     } else {
-        print_pattern(chain->m_pattern);
+        if(chain->m_pattern)
+            if(chain->m_pattern->print)
+                chain->m_pattern->print(chain->m_pattern, stdout);
         switch(chain->m_type) {
             case(RULE_TYPE_LOG):
                 printf(" log -> ");

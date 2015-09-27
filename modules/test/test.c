@@ -1,7 +1,7 @@
 #include "plugin.h"
 #include <stdio.h>
 
-AIRSTAT_PLUGIN(SINK, "TestPlugin")
+AIRSTAT_SINK_PLUGIN("TestPlugin")
 
 size_t count = 0;
 size_t next = 0;
