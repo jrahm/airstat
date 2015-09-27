@@ -70,6 +70,6 @@ extern char plugin_error[128];
 struct plugin* load_plugins(const char* directory);
 void free_plugin_chain(struct plugin* plugin);
 void free_one_plugin(struct plugin* plugin);
-void print_plugin_chain(FILE* out, struct plugin* pl);
+void print_plugin_chain(FILE* out, const struct plugin* pl);
 
 #endif /* SRC_PLUGIN_SS_PLUGIN_SS_ */

@@ -15,9 +15,14 @@
 
 static string_map_t* plugin_chain_to_string_map(struct plugin* chain)
 {
+    print_plugin_chain(stdout, chain);
     string_map_t* ret = new_string_map();
-    for(; chain != NULL; ++ chain) {
-        ret->insert(ret, chain->name, chain);
+    for(; chain != NULL; chain = chain->next_plugin) {
+        if(chain->name == NULL) {
+            fprintf(stderr, "Plugin name null!\n");
+        } else {
+            ret->insert(ret, chain->name, chain);
+        }
     }
     return ret;
 }
@@ -26,7 +31,7 @@ static int initialize_source_plugins(struct plugin* chain)
 {
     int rc;
     int count = 0;
-    while(chain->next_plugin) {
+    for(; chain; chain = chain->next_plugin) {
         if(chain->type == PLUGIN_TYPE_SOURCE) {
             rc = chain->source.init_routine(0, NULL, &chain->source.ctx);
             if(rc) {

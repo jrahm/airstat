@@ -202,7 +202,7 @@ struct plugin* load_plugins(const char* dir)
     return start;
 }
 
-static void print_one_plugin(FILE* out, struct plugin* pl)
+static void print_one_plugin(FILE* out, const struct plugin* pl)
 {
     static const char* ARR[] = {
         "SINK", "SOURCE"
@@ -217,7 +217,7 @@ static void print_one_plugin(FILE* out, struct plugin* pl)
     }
 }
 
-void print_plugin_chain(FILE* out, struct plugin* pl)
+void print_plugin_chain(FILE* out, const struct plugin* pl)
 {
     if(!pl) return;
     print_one_plugin(out, pl);

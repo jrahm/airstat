@@ -14,6 +14,10 @@ AIRSTAT_SOURCE_PLUGIN("ether", ETHER_MAGIC_NUMBER)
 #define HAS_SRC_MAC 0x1
 #define HAS_DEST_MAC 0x2
 
+struct ether_context {
+    int fd;
+};
+
 struct ether_pattern {
     pattern_t super;
 
@@ -27,12 +31,11 @@ const char* get_airstat_initial_chain() { return "ether"; }
 
 int airstat_plugin_initialize(int argc, char** argv, void** out)
 {
-    *out = NULL;
-}
+    struct ether_context* ctx = calloc(sizeof(struct ether_context), 1);
+    *out = ctx;
 
-int get_airstat_fd(void* ctx)
-{
     int sock = socket(PF_PACKET, SOCK_RAW, htons(0x0800));
+    ctx->fd = sock;
     int rc = 0;
     int sockopt = 1;
 
@@ -44,11 +47,17 @@ int get_airstat_fd(void* ctx)
     if((rc = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt))))
         goto error;
 
-    return sock;
 
+    return 0;
 error:
     close(sock);
     return -rc;
+}
+
+int get_airstat_fd(struct ether_context* ctx)
+{
+    printf("returning %d\n", ctx->fd);
+    return ctx->fd;
 }
 
 airstat_packet_t* get_airstat_packet(void* ctx, int fd)
@@ -78,7 +87,7 @@ static int ether_pattern_match(airstat_packet_t* packet, pattern_t* pattern_)
         return 0;
     }
 
-    struct ether_pattern* pattern = (struct ether_pattern*) pattern;
+    struct ether_pattern* pattern = (struct ether_pattern*) pattern_;
     struct ether_header* as_ether_header;
     as_ether_header = (struct ether_header*) packet->bytes;
 
@@ -95,19 +104,22 @@ static int ether_pattern_match(airstat_packet_t* packet, pattern_t* pattern_)
 
 }
 
-pattern_t* compile_airstat_pattern(struct string_map* map)
+pattern_t* compile_airstat_pattern(void* ctx, struct string_map* map)
 {
     struct ether_pattern* ret = calloc(sizeof(struct ether_pattern), 1);
     ret->super.type = ETHER_MAGIC_NUMBER;
     ret->super.pattern_matches = ether_pattern_match;
+    ret->flags = 0;
 
     if(map->has_key(map, "src_mac")) {
         if(parse_mac_addr(ret->src_mac, map->get(map, "src_mac")))
             goto error;
+        ret->flags |= HAS_SRC_MAC;
     }
     if(map->has_key(map, "dest_mac")) {
         if(parse_mac_addr(ret->dest_mac, map->get(map, "dest_mac")))
             goto error;
+        ret->flags |= HAS_DEST_MAC;
     }
 
     return (pattern_t*) ret;

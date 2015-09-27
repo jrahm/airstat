@@ -188,6 +188,7 @@ pattern_t* compile_pattern(const char* pat, struct chain_parse_ctx* ctx)
         goto finally;
     }
 
+    printf("pl=%p\n", pl);
     ret = pl->source.compile_pattern(pl->source.ctx, token_map);
 finally:
     string_map_free(token_map, free);
