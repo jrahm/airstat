@@ -60,6 +60,10 @@ struct plugin {
             
             void* ctx;
             int is_initialized;
+
+            /* continue the packet. Returns the magic number of
+             * the next plugin to handle the packet. 0 means stop */
+            u32_t (*continue_packet)(airstat_packet_t* packet);
         } source;
     };
 

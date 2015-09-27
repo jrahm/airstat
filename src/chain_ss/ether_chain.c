@@ -93,7 +93,29 @@ void chain_handle_return(struct chain_raw_packet_data* data)
 
 void chain_handle_continue(struct chain_raw_packet_data* data)
 {
-    fprintf(stderr, "continue NOT implemented\n");
+    u32_t new_magic;
+    struct plugin* new_plugin;
+
+    if(data->handling_plugin &&
+        data->handling_plugin->type == PLUGIN_TYPE_SOURCE) {
+        new_magic = data->handling_plugin->source.continue_packet(&data->packet_data);
+        if(new_magic == 0) {
+            fprintf(stderr, "Packet flagged to not continue\n");
+            return;
+        } else {
+            new_plugin = intmap_get(data->issuer->m_magic_to_plugin_, new_magic);
+            if(!new_plugin || new_plugin->type != PLUGIN_TYPE_SOURCE) {
+                fprintf(stderr, "No plugin for continuing magic number %u\n", new_magic);
+                return ;
+            } else {
+                data->packet_data.packet_type = new_magic;
+                data->current_chain_rule = new_plugin->source.start_chain;
+                chain_handle_BEGIN(data);
+            }
+        }
+    }
+
+    fprintf(stderr, "No handling plugin for packet_data?\n");
 }
 
 void chain_handle_drop(struct chain_raw_packet_data* data)

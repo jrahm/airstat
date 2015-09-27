@@ -94,7 +94,7 @@ static int run_source_plugins(struct chain_ctx* ctx, struct plugin* chain, size_
                         fired_plugin->source.ctx, pollfds[i].fd
                     );
 
-                   chain_ctx_handle_incoming_packet(ctx, packet, fired_plugin->source.start_chain);
+                   chain_ctx_handle_incoming_packet(ctx, packet, fired_plugin);
                 }
             }
         } else {
@@ -135,7 +135,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    chain_context = create_chain_ctx(1, chains);
+    chain_context = create_chain_ctx(1, chains, plugin_chain);
     if(!chain_context) {
         fprintf(stderr, "Failed to create chain context\n");
         return 2;

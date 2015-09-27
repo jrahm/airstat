@@ -3,10 +3,12 @@
 
 #include "types.h"
 #include "blocking_queue.h"
+#include "intmap.h"
 #include "exported_structures.h"
 
 #include <pthread.h>
 #include "chain.h"
+#include "plugin_ss/plugin_ss.h"
 
 #define to_handler(a) \
     ((void(*)(struct chain_raw_packet_data*))a)
@@ -18,19 +20,25 @@ struct chain_ctx {
     pthread_t        *m_workers_;
 
     struct chain_set  m_chain_set_;
+    intmap_t*         m_magic_to_plugin_;
 };
 
 struct chain_raw_packet_data {
     void (*next_handler)(struct chain_raw_packet_data* data);
     struct chain_rule* current_chain_rule;
     struct chain_ctx* issuer;
+    struct plugin* handling_plugin;
 
     struct airstat_packet packet_data;
 };
 
 
-struct chain_ctx *create_chain_ctx(size_t nworkers, struct chain_set* chainset);
+struct chain_ctx *create_chain_ctx(size_t nworkers,
+                                   struct chain_set* chainset,
+                                   struct plugin* plugin_chain);
+
 int start_chain_ctx(struct chain_ctx *ctx);
-void chain_ctx_handle_incoming_packet(struct chain_ctx* ctx, airstat_packet_t* packet, struct chain_rule* rule);
+void chain_ctx_handle_incoming_packet(struct chain_ctx* ctx,
+                        airstat_packet_t* packet, struct plugin* fired);
 
 #endif /* SRC_CHAIN_SS_CHAIN_SS_ */

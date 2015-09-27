@@ -32,6 +32,7 @@ void *chain_thread__main__(void *ctx_)
             } else {
                 handler = packet_ptr->next_handler;
                 packet_ptr->next_handler = NULL;
+                packet_ptr->issuer = ctx;
                 handler(packet_ptr);
                 if(packet_ptr->next_handler) {
                     blocking_queue_add(ctx->m_packet_queue_, packet_ptr);
@@ -44,7 +45,7 @@ void *chain_thread__main__(void *ctx_)
 
 }
 
-struct chain_ctx* create_chain_ctx(size_t nworkers, struct chain_set* chainset)
+struct chain_ctx* create_chain_ctx(size_t nworkers, struct chain_set* chainset, struct plugin* pl)
 {
     struct chain_ctx* ret = NULL;
     if(!chainset)
@@ -56,6 +57,12 @@ struct chain_ctx* create_chain_ctx(size_t nworkers, struct chain_set* chainset)
     ret->m_workers_ = NULL;
     ret->m_packet_queue_ = new_blocking_queue();
     ret->m_chain_set_ = *chainset;
+    ret->m_magic_to_plugin_ = new_intmap();
+    for(; pl != NULL; pl = pl->next_plugin) {
+        if(pl->type == PLUGIN_TYPE_SOURCE) {
+            intmap_insert(ret->m_magic_to_plugin_, pl->source.magic, pl);
+        }
+    }
 
     return ret;
 /* error:
@@ -68,16 +75,17 @@ struct chain_ctx* create_chain_ctx(size_t nworkers, struct chain_set* chainset)
 
 void chain_ctx_handle_incoming_packet(struct chain_ctx* ctx,
                                        airstat_packet_t* packet,
-                                       struct chain_rule* rule)
+                                       struct plugin* handler)
 {
-    if(!rule) {
+    if(!handler || !handler->source.start_chain) {
         free(packet->bytes);
     } else {
         struct chain_raw_packet_data* chain_packet;
         chain_packet = calloc(sizeof(struct chain_raw_packet_data), 1);
         chain_packet->packet_data = *packet;
-        chain_packet->current_chain_rule = rule;
+        chain_packet->current_chain_rule = handler->source.start_chain;
         chain_packet->next_handler = to_handler(chain_handle_BEGIN);
+        chain_packet->handling_plugin = handler;
         blocking_queue_add(ctx->m_packet_queue_, chain_packet);
     }
 

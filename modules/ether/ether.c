@@ -103,6 +103,15 @@ static int ether_pattern_match(airstat_packet_t* packet, pattern_t* pattern_)
 
 }
 
+u32_t airstat_continue_packet(airstat_packet_t* packet)
+{
+    struct ether_header* as_ether_header;
+    as_ether_header = (struct ether_header*) packet->bytes;
+    if(htons(as_ether_header->ether_type) == ETHERTYPE_IP)
+        return 0x2;
+    return 0;
+}
+
 pattern_t* compile_airstat_pattern(void* ctx, struct string_map* map)
 {
     struct ether_pattern* ret = calloc(sizeof(struct ether_pattern), 1);
