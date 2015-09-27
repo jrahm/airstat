@@ -447,6 +447,7 @@ void test_incref(struct chain_rule* rule)
 struct chain_set* parse_chains_from_file(const char* filename, struct chain_parse_ctx* ctx)
 {
     FILE* fd;
+    struct plugin* cur;
     fd = fopen(filename, "r");
     if(!fd) {
         sprintf(error, "Unable to open file: %s", filename);
@@ -459,6 +460,18 @@ struct chain_set* parse_chains_from_file(const char* filename, struct chain_pars
 
     struct chain_set* ret = malloc(sizeof(struct chain_set));
 
+    cur = ctx->start_plugin_chain;
+    /* we go through and link all the starting
+     * chains */
+    for(; cur != NULL; cur = cur->next_plugin) {
+        if(cur->type == PLUGIN_TYPE_SOURCE) {
+            cur->source.start_chain = string_map_get(map, cur->source.init_chain);
+
+            if(!cur->source.start_chain) {
+                fprintf(stderr, "WARN: no %s chain in conifguration\n", cur->source.init_chain);
+            }
+        }
+    }
     ret->chains = map;
 
     return ret;

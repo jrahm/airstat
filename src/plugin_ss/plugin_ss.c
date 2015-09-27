@@ -11,7 +11,7 @@
 
 char plugin_error[128];
 
-static void free_one_plugin(struct plugin* plug)
+void free_one_plugin(struct plugin* plug)
 {
     free(plug->name);
 }

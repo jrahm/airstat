@@ -66,6 +66,23 @@ struct chain_ctx* create_chain_ctx(size_t nworkers, struct chain_set* chainset)
     return NULL; */
 }
 
+void chain_ctx_handle_incoming_packet(struct chain_ctx* ctx,
+                                       airstat_packet_t* packet,
+                                       struct chain_rule* rule)
+{
+    if(!rule) {
+        free(packet->bytes);
+    } else {
+        struct chain_raw_packet_data* chain_packet;
+        chain_packet = calloc(sizeof(struct chain_raw_packet_data), 1);
+        chain_packet->packet_data = *packet;
+        chain_packet->current_chain_rule = rule;
+        chain_packet->next_handler = to_handler(chain_handle_BEGIN);
+        blocking_queue_add(ctx->m_packet_queue_, chain_packet);
+    }
+
+    free(packet);
+}
 void on_packet_event__(void* ctx_, struct packet_event* evt)
 {
     struct chain_ctx *ctx = (struct chain_ctx*) ctx_;
@@ -91,8 +108,6 @@ int start_chain_ctx(struct chain_ctx *ctx)
         pthread_create(&ctx->m_workers_[i],
             NULL, chain_thread__main__, ctx);
     }
-
-    BIND(packet_event, on_packet_event__, ctx, ID_PACKET_RECIEVED);
 
     return 0;
 }

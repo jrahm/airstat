@@ -31,5 +31,6 @@ struct chain_raw_packet_data {
 
 struct chain_ctx *create_chain_ctx(size_t nworkers, struct chain_set* chainset);
 int start_chain_ctx(struct chain_ctx *ctx);
+void chain_ctx_handle_incoming_packet(struct chain_ctx* ctx, airstat_packet_t* packet, struct chain_rule* rule);
 
 #endif /* SRC_CHAIN_SS_CHAIN_SS_ */
