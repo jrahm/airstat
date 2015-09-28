@@ -101,16 +101,20 @@ void chain_handle_continue(struct chain_raw_packet_data* data)
         new_magic = data->handling_plugin->source.continue_packet(&data->packet_data);
         if(new_magic == 0) {
             fprintf(stderr, "Packet flagged to not continue\n");
+            data->next_handler = NULL;
             return;
         } else {
             new_plugin = intmap_get(data->issuer->m_magic_to_plugin_, new_magic);
             if(!new_plugin || new_plugin->type != PLUGIN_TYPE_SOURCE) {
                 fprintf(stderr, "No plugin for continuing magic number %u\n", new_magic);
+                data->next_handler = NULL;
                 return ;
             } else {
                 data->packet_data.packet_type = new_magic;
                 data->current_chain_rule = new_plugin->source.start_chain;
+                data->handling_plugin = new_plugin;
                 chain_handle_BEGIN(data);
+                return ;
             }
         }
     }

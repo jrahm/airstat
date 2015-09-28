@@ -2,6 +2,7 @@
 #define SRC_PLUGIN_
 
 #include "exported_structures.h"
+#define ENOIMPL -0xff
 
 #define AIRSTAT_SOURCE_PLUGIN(name, magic) \
     const char* get_airstat_plugin_type() { return "SOURCE"; } \

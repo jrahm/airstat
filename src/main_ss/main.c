@@ -2,6 +2,7 @@
 #include "ether_ss/ether_ss.h"
 #include "iphdr_ss/iphdr_ss.h"
 
+#include "plugin.h"
 #include "bus.h"
 #include "events.h"
 #include "chain_ss/chain.h"
@@ -62,6 +63,8 @@ static struct pollfd* setup_polls(struct plugin* chain, size_t count, size_t* rs
                 pollfds[i].events = POLLIN | POLLPRI;
                 pollfds[i ++].fd = fd;
                 intmap_insert(fd_to_plugin, fd, chain);
+            } else if(fd == ENOIMPL){
+                fprintf(stderr, "plugin %s not implemented\n", chain->name);
             } else {
                 perror("Invalid file descriptor");
             }
